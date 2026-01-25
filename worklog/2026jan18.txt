@@ -1,0 +1,9 @@
+.LOG 
+
+19:13 18-01-2026
+Today’s work focused on revising and finalizing the complete database schema for the ARCADE project. The existing design was carefully reviewed to identify structural gaps related to role clarity, ownership mapping, and real-world academic workflows.
+The schema was redesigned with USER as the central identity entity, ensuring that all system actions, approvals, and ownerships are consistently referenced through user_id. This eliminated ambiguity and improved relational integrity across the system.
+Academic structure was refined by clearly separating SUBJECT and SUBJECT_ALLOTMENT, allowing accurate modeling of classroom teaching, MOOC-based subjects, and multiple faculty assignments without hard-coded assumptions.
+Approval-driven modules such as NOTES, ROADMAP, RESUME_SAMPLES, and RESOURCES were finalized with explicit role-based control and relational accountability. JSON fields were used only where flexibility was required, such as roadmap steps and skill sets.
+The revised schema was documented in a clean, explicit, and implementation-ready format, making it suitable for SRS documentation, ER diagram creation, SQL implementation, and viva explanations. The database design is now considered final and freeze-worthy.
+19:14 18-01-2026
