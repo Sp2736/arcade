@@ -1,0 +1,7 @@
+.LOG 
+
+16:36 17-01-2026
+Database Schema Finalization
+Today was focused on finalizing the core database schema after multiple rounds of discussion, self-review, and targeted research. We carefully evaluated entity responsibilities, role-based data separation, and long-term scalability before locking the structure. Key decisions included clearly separating what is taught (SUBJECT) from how and by whom it is taught (SUBJECT_ALLOTMENT), designing flexible handling for MOOC-based subjects, and ensuring role-driven behavior through well-defined USER, ROLE_REQUIREMENTS, and STUDENT_SKILLS tables. Approval workflows and accountability were strengthened using NOTES, RESOURCES, and AUDIT/LOG tables, while JSON fields were intentionally used where extensibility and evolving requirements were expected. Overall, the schema now reflects a balanced design that is normalized, role-aware, and aligned with real academic workflows, making it a stable foundation for further backend development.
+
+19:29 17-01-2026
