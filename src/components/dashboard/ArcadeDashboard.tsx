@@ -10,29 +10,30 @@ import HomeView from "./HomeView";
 import MeteorCursor from "./MeteorCursor";
 import FAQSidebar from "./FAQSidebar";
 import BackgroundMeteors from "./BackgroundMeteors";
+import AuthView from "./AuthView";
+import ContactView from "./ContactView";
 
-// --- PLACEHOLDER VIEWS ---
-const LoginView = () => (
-  <div className="w-full min-h-full flex flex-col items-center justify-center text-zinc-500">
-     <h1 className="text-4xl font-black text-white">LOGIN VIEW</h1>
-  </div>
-);
-
-const ContactView = () => (
-    <div className="w-full min-h-full flex flex-col items-center justify-center text-zinc-500">
-       <h1 className="text-4xl font-black text-white">CONTACT VIEW</h1>
-    </div>
-);
+// ... (keep Placeholder Views if any) ...
 
 export default function ArcadeDashboard() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
+  
+  // --- NEW STATE FOR SCROLLING ---
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+
+  // --- NEW NAVIGATION HANDLER ---
+  const handleNavigate = (view: ViewState, scrollId?: string) => {
+    setCurrentView(view);
+    // If a scroll ID is provided, set it. Otherwise, clear it so it doesn't auto-scroll next time.
+    setScrollTarget(scrollId || null);
+  };
 
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white font-sans overflow-hidden selection:bg-blue-500/30 relative">
       
-      {/* --- SHARED BACKGROUND --- */}
+      {/* ... (Keep Backgrounds & Cursor) ... */}
       <BackgroundMeteors />
       <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute top-0 right-0 w-[50%] h-full bg-blue-900/10 blur-[120px]" />
@@ -41,22 +42,21 @@ export default function ArcadeDashboard() {
 
       <MeteorCursor />
       
-      {/* --- NAVIGATION --- */}
-      <Sidebar currentView={currentView} onNavigate={setCurrentView} />
+      {/* Pass handleNavigate to Sidebar if you want sidebar to support scroll (optional)
+          Currently Sidebar expects strictly (view: ViewState) => void.
+          Typescript allows passing (view, scrollId) where scrollId is optional, 
+          so handleNavigate works for Sidebar too! 
+      */}
+      <Sidebar currentView={currentView} onNavigate={handleNavigate} />
       
       <MobileMenu 
         currentView={currentView} 
-        onNavigate={setCurrentView} 
+        onNavigate={handleNavigate} 
         mobileOpen={mobileMenuOpen} 
         onMobileClose={() => setMobileMenuOpen(false)} 
       />
 
-      {/* --- MAIN CONTENT AREA (SCROLL CONTAINER) --- */}
-      {/* FIX: 
-          1. Removed 'overflow-hidden' and added 'overflow-y-auto'. 
-          2. This div is now responsible for the scrollbar.
-          3. 'h-full' ensures it takes up the full screen height minus no margins.
-      */}
+      {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 h-full overflow-y-auto overflow-x-hidden relative z-10 scroll-smooth custom-scrollbar">
         
         {/* Mobile Toggle */}
@@ -67,7 +67,6 @@ export default function ArcadeDashboard() {
         </div>
 
         {/* View Switcher */}
-        {/* min-h-full ensures full height views (like AboutPortal) still look good */}
         <div className="min-h-full w-full flex flex-col">
           <AnimatePresence mode="wait">
              {currentView === "home" && (
@@ -78,8 +77,8 @@ export default function ArcadeDashboard() {
                     exit={{ opacity: 0 }}
                     className="w-full"
                 >
-                    {/* Pass the setCurrentView function to HomeView */}
-                    <HomeView onNavigate={setCurrentView} />
+                    {/* PASS THE SCROLL TARGET AND HANDLER HERE */}
+                    <HomeView onNavigate={handleNavigate} scrollToId={scrollTarget} />
                 </motion.div>
              )}
              
@@ -89,8 +88,18 @@ export default function ArcadeDashboard() {
                  </motion.div>
              )}
              
-             {currentView === "login" && <LoginView key="login" />}
-             {currentView === "contact" && <ContactView key="contact" />}
+             {currentView === "login" && (
+                 <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    <AuthView />
+                 </motion.div>
+             )}
+             
+             {currentView === "contact" && (
+                <motion.div key="contact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
+                    {/* PASS HANDLER HERE */}
+                    <ContactView onNavigate={handleNavigate} />
+                </motion.div>
+             )}
           </AnimatePresence>
         </div>
 

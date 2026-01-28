@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, memo } from "react";
+import React, { useState, memo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Github, Linkedin, ArrowRight, Database, Map, ShieldCheck, Cpu, Instagram, Mail } from "lucide-react";
 import Image from "next/image";
@@ -80,13 +80,28 @@ const FEATURES = [
   },
 ];
 
-// --- PROPS INTERFACE ---
+// --- UPDATED PROPS INTERFACE ---
 interface HomeViewProps {
   onNavigate?: (view: "home" | "about" | "login" | "contact") => void;
+  scrollToId?: string | null; // <--- NEW PROP
 }
 
-export default function HomeView({ onNavigate }: HomeViewProps) {
+export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+
+  // --- NEW: AUTO-SCROLL LOGIC ---
+  useEffect(() => {
+    if (scrollToId) {
+      const element = document.getElementById(scrollToId);
+      if (element) {
+        // Small delay to ensure the exit animation of the previous page is done
+        // and this page is fully mounted in the DOM
+        setTimeout(() => {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 500); 
+      }
+    }
+  }, [scrollToId]);
 
   // Fallback function if onNavigate is not provided
   const handleNavigate = (view: "home" | "about" | "login" | "contact") => {
@@ -175,14 +190,17 @@ export default function HomeView({ onNavigate }: HomeViewProps) {
       </section>
 
       {/* ================= CORE TEAM ================= */}
-      <section className="w-full px-4 py-16 flex flex-col items-center relative z-10">
+      {/* ADDED ID HERE FOR SCROLL TARGET */}
+      <section id="core-team" className="w-full px-4 py-16 flex flex-col items-center relative z-10">
         <div className="text-center mb-12 relative z-10">
           <h2 className="text-blue-500 font-mono text-sm tracking-[0.3em] uppercase mb-2">The Architects</h2>
           <h3 className="text-4xl md:text-6xl font-black text-white">CORE TEAM</h3>
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-6xl px-2">
-          {TEAM.map((member) => (
+          {/* ... (Keep the TEAM.map loop exactly as is) ... */}
+           {/* (I am omitting the map content to save space, keep your existing code) */}
+           {TEAM.map((member) => (
             <MemberCard 
               key={member.id}
               member={member}
