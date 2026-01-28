@@ -3,7 +3,7 @@
 import React, { useState, memo } from "react";
 import { motion } from "framer-motion";
 import { Github, Linkedin, ArrowRight, Database, Map, ShieldCheck, Cpu, Instagram, Mail } from "lucide-react";
-import Image from "next/image"; // Import Image component
+import Image from "next/image";
 
 // --- DATA ---
 const TEAM = [
@@ -11,14 +11,14 @@ const TEAM = [
     id: 1,
     name: "Swayam Patel",
     studentId: "24DCS088",
-    image: "/swayam.jpg", // Exact filename provided
+    image: "/swayam.jpg",
     role: "Lead Architect",
     desc: "Orchestrating the ecosystem. Bridging the gap between conceptual depth and production reality through scalable system design.",
     color: "from-blue-500 to-indigo-600",
     borderColor: "group-hover:border-blue-500/50",
     socials: {
-      github: "https://github.com",
-      linkedin: "https://linkedin.com",
+      github: "https://github.com/Sp2736",
+      linkedin: "https://www.linkedin.com/in/swayam-patel-316ba5317?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
       instagram: "https://instagram.com/sp_27.03",
       mail: "mailto:swayampatel2736@gmail.com"
     }
@@ -27,32 +27,32 @@ const TEAM = [
     id: 2,
     name: "Jalisa Malik",
     studentId: "24DCS049",
-    image: "/jalisa.jpeg", // Exact filename provided
+    image: "/jalisa.jpeg",
     role: "UI/UX Specialist",
     desc: "Crafting the glass-morphic interfaces and ensuring seamless fluid interactions that define the ARCADE user experience.",
     color: "from-purple-500 to-pink-600",
     borderColor: "group-hover:border-purple-500/50",
     socials: {
-      github: "#",
-      linkedin: "#",
-      instagram: "#",
-      mail: "#"
+      github: "https://github.com/jalisa2106",
+      linkedin: "https://www.linkedin.com/in/jalisa-malik-8b0308333?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
+      instagram: "https://www.instagram.com/jalisamalik_0612?igsh=aXZ3N2o4MGt2MDRy",
+      mail: "mailto:jalisamalik21@gmail.com"
     }
   },
   {
     id: 3,
     name: "Rutansh Govardhan",
     studentId: "24DCE045",
-    image: "/rutansh.jpeg", // Exact filename provided
+    image: "/rutansh.jpeg",
     role: "System Engineer",
     desc: "Designing the scalable schemas and secure approval pipelines that power the core data infrastructure.",
     color: "from-orange-500 to-red-600",
     borderColor: "group-hover:border-orange-500/50",
     socials: {
-      github: "#",
-      linkedin: "#",
-      instagram: "#",
-      mail: "#"
+      github: "https://github.com/rutansh-07",
+      linkedin: "https://www.linkedin.com/in/rutansh-govardhan-9592b932a?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
+      instagram: "https://www.instagram.com/irutansh07?igsh=MWYxNXE3YTlqN2VidQ==",
+      mail: "mailto:rutanshgovardhan07@gmail.com"
     }
   },
 ];
