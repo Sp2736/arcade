@@ -13,27 +13,23 @@ import BackgroundMeteors from "./BackgroundMeteors";
 import AuthView from "./AuthView";
 import ContactView from "./ContactView";
 
-// ... (keep Placeholder Views if any) ...
-
 export default function ArcadeDashboard() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
   
-  // --- NEW STATE FOR SCROLLING ---
+  // State for scrolling to specific sections (e.g., Core Team)
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
-  // --- NEW NAVIGATION HANDLER ---
   const handleNavigate = (view: ViewState, scrollId?: string) => {
     setCurrentView(view);
-    // If a scroll ID is provided, set it. Otherwise, clear it so it doesn't auto-scroll next time.
     setScrollTarget(scrollId || null);
   };
 
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white font-sans overflow-hidden selection:bg-blue-500/30 relative">
       
-      {/* ... (Keep Backgrounds & Cursor) ... */}
+      {/* --- BACKGROUNDS --- */}
       <BackgroundMeteors />
       <div className="fixed inset-0 z-0 pointer-events-none">
           <div className="absolute top-0 right-0 w-[50%] h-full bg-blue-900/10 blur-[120px]" />
@@ -42,11 +38,7 @@ export default function ArcadeDashboard() {
 
       <MeteorCursor />
       
-      {/* Pass handleNavigate to Sidebar if you want sidebar to support scroll (optional)
-          Currently Sidebar expects strictly (view: ViewState) => void.
-          Typescript allows passing (view, scrollId) where scrollId is optional, 
-          so handleNavigate works for Sidebar too! 
-      */}
+      {/* --- NAVIGATION --- */}
       <Sidebar currentView={currentView} onNavigate={handleNavigate} />
       
       <MobileMenu 
@@ -56,16 +48,20 @@ export default function ArcadeDashboard() {
         onMobileClose={() => setMobileMenuOpen(false)} 
       />
 
+      {/* --- FIX: MOBILE TOGGLE (MOVED HERE & MADE FIXED) --- */}
+      {/* Now sits outside the scrollable area with fixed positioning */}
+      <div className="fixed top-6 left-6 z-[100] md:hidden">
+          <button 
+            onClick={() => setMobileMenuOpen(true)} 
+            className="p-3 text-white bg-zinc-900/50 backdrop-blur-md rounded-xl border border-white/10 shadow-lg active:scale-95 transition-all"
+          >
+              <Menu size={20} />
+          </button>
+      </div>
+
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 h-full overflow-y-auto overflow-x-hidden relative z-10 scroll-smooth custom-scrollbar">
         
-        {/* Mobile Toggle */}
-        <div className="absolute top-8 left-8 flex md:hidden items-center z-50">
-            <button onClick={() => setMobileMenuOpen(true)} className="p-2 text-white bg-zinc-900/50 rounded-lg border border-white/10">
-                <Menu size={20} />
-            </button>
-        </div>
-
         {/* View Switcher */}
         <div className="min-h-full w-full flex flex-col">
           <AnimatePresence mode="wait">
@@ -77,7 +73,6 @@ export default function ArcadeDashboard() {
                     exit={{ opacity: 0 }}
                     className="w-full"
                 >
-                    {/* PASS THE SCROLL TARGET AND HANDLER HERE */}
                     <HomeView onNavigate={handleNavigate} scrollToId={scrollTarget} />
                 </motion.div>
              )}
@@ -96,7 +91,6 @@ export default function ArcadeDashboard() {
              
              {currentView === "contact" && (
                 <motion.div key="contact" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    {/* PASS HANDLER HERE */}
                     <ContactView onNavigate={handleNavigate} />
                 </motion.div>
              )}
