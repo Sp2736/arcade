@@ -117,45 +117,49 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
     <div className="w-full flex flex-col items-center justify-start relative z-20">
       
       {/* ================= HERO SECTION ================= */}
-      <section className="w-full min-h-[95vh] flex flex-col items-center justify-center text-center px-4 md:px-24 relative">
+      <section className="w-full min-h-[85vh] md:min-h-[95vh] flex flex-col items-center justify-center text-center px-6 md:px-24 py-12 relative">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
-          className="max-w-6xl relative z-10"
+          className="max-w-6xl relative z-10 w-full"
         >
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="h-px w-12 bg-blue-500/50" />
-            <span className="text-blue-400 font-mono text-xs md:text-sm tracking-[0.4em] uppercase">Welcome To The Portal</span>
-            <div className="h-px w-12 bg-blue-500/50" />
+          {/* Top Divider - Scaled down for mobile */}
+          <div className="flex items-center justify-center gap-3 mb-6 md:mb-8">
+            <div className="h-px w-8 md:w-12 bg-blue-500/50" />
+            <span className="text-blue-400 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">Welcome To The Portal</span>
+            <div className="h-px w-8 md:w-12 bg-blue-500/50" />
           </div>
 
-          <div className="mb-10">
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-widest mb-4 leading-none select-none drop-shadow-2xl">
+          <div className="mb-6 md:mb-10">
+            {/* Main Title - Adjusted size for mobile fit */}
+            <h1 className="text-5xl sm:text-6xl md:text-8xl lg:text-9xl font-black text-white tracking-widest mb-3 md:mb-4 leading-none select-none drop-shadow-2xl">
               A.R.C.A.D.E.
             </h1>
-            <h2 className="text-lg md:text-2xl lg:text-3xl font-bold tracking-widest uppercase">
+            {/* Subtitle - Better wrapping on small screens */}
+            <h2 className="text-sm sm:text-lg md:text-2xl lg:text-3xl font-bold tracking-widest uppercase px-2">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-200 to-blue-500 filter drop-shadow-[0_0_20px_rgba(37,99,235,0.5)]">
                 Academic Resource & Career Assist Digital Environment
               </span>
             </h2>
           </div>
 
-          <p className="text-zinc-300 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-light mb-10">
+          {/* Paragraph - Reduced margin and text size for mobile */}
+          <p className="text-zinc-300 text-sm sm:text-lg md:text-xl max-w-3xl mx-auto leading-relaxed font-light mb-8 md:mb-10 px-1">
             A <span className="text-white font-semibold">guided academic ecosystem</span> designed to dismantle the ambiguity of university education and replace it with precision, verification, and strategic direction.
           </p>
 
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 w-full sm:w-auto">
             <button 
               onClick={() => handleNavigate('login')}
-              className="group relative px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-all hover:scale-105 flex items-center gap-2 shadow-[0_0_40px_rgba(37,99,235,0.4)]"
+              className="group relative w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition-all hover:scale-105 flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(37,99,235,0.4)]"
             >
               <span>Initialize Portal</span>
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
             <button 
               onClick={() => handleNavigate('about')}
-              className="px-8 py-4 border border-white/20 hover:bg-white/5 text-zinc-300 font-medium rounded-full transition-all"
+              className="w-full sm:w-auto px-8 py-4 border border-white/20 hover:bg-white/5 text-zinc-300 font-medium rounded-full transition-all"
             >
               Learn More
             </button>
@@ -171,7 +175,7 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
                 opacity: { delay: 1.5, duration: 1 },
                 y: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
             }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer z-20 group"
+            className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer z-20 group"
         >
             <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-zinc-500 group-hover:text-white transition-colors">
                 Scroll
@@ -277,9 +281,7 @@ const MemberCard = memo(({ member, isHovered, isDimmed, onHover, onLeave }: Memb
     >
         {/* --- TOP: IMAGE AREA --- */}
         <div className="p-3">
-            {/* UPDATED: Removed 'bg-gradient-to-br ${member.color}' 
-                Changed to 'bg-zinc-900' for a neutral backing 
-            */}
+            {/* UPDATED: Neutral background */}
             <div className="w-full h-72 rounded-[1.5rem] bg-zinc-900 relative overflow-hidden">
                  <Image 
                    src={member.image} 
@@ -290,10 +292,6 @@ const MemberCard = memo(({ member, isHovered, isDimmed, onHover, onLeave }: Memb
                  />
                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay z-10 pointer-events-none"></div>
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20 pointer-events-none"></div>
-                 
-                 {/* UPDATED: Removed the tint overlay div entirely 
-                    <div className={`absolute inset-0 bg-gradient-to-br ${member.color} mix-blend-overlay opacity-20 z-30 pointer-events-none`}></div> 
-                 */}
             </div>
         </div>
 
