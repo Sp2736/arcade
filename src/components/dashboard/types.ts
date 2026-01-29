@@ -4,7 +4,7 @@ export type ModuleData = {
   id: number;
   title: string;
   description: string;
-  outputs: string[];
+  outputs: string[]; // These will display your "Features"
   icon: ElementType;
-  time: string;
+  time: string; // Used for Phase/Stage labeling
 };

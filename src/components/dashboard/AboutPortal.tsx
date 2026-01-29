@@ -28,11 +28,11 @@ export default function AboutPortal() {
     >
         {/* Left Column: Text Content */}
         <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24 relative z-10">
-            {/* Breadcrumb moved here inside the content area */}
+            {/* Breadcrumb */}
             <div className="hidden md:flex absolute top-8 left-8 items-center gap-2 text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                <span className="text-blue-500 font-bold">Dev_Phase</span>
+                <span className="text-blue-500 font-bold">A.R.C.A.D.E.</span>
                 <span className="text-zinc-700">/</span>
-                <span>Module_0{activeId}</span>
+                <span>{activeModule.time}</span>
             </div>
 
             <AnimatePresence mode="wait">
@@ -97,8 +97,8 @@ export default function AboutPortal() {
                         <activeModule.icon size={36} className="text-white" />
                     </div>
                     <div className="mb-6">
-                        <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Objective</h3>
-                        <h4 className="text-2xl font-bold text-white">Deliverables</h4>
+                        <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Module {activeId}</h3>
+                        <h4 className="text-2xl font-bold text-white">Key Features</h4>
                     </div>
                     <div className="space-y-4">
                         {activeModule.outputs.map((item, idx) => (

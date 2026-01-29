@@ -55,7 +55,7 @@ export default function ContactView({ onNavigate }: ContactViewProps) {
                 <div className="space-y-6">
                     <InfoRow icon={Mail} text="support@arcade.charusat.edu" label="Electronic Mail" />
                     <InfoRow icon={Phone} text="+91 98765 43210" label="Helpline" />
-                    <InfoRow icon={MapPin} text="CMPICA, CHARUSAT Campus, Changa" label="Base of Operations" />
+                    <InfoRow icon={MapPin} text="DEPSTAR, CHARUSAT Campus, Changa" label="Base of Operations" />
                 </div>
             </div>
 
@@ -63,11 +63,11 @@ export default function ContactView({ onNavigate }: ContactViewProps) {
                 <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Connect with us</p>
                 
                 <div className="flex flex-col gap-6">
-                    <div className="flex gap-4">
+                    {/* <div className="flex gap-4">
                         <SocialButton icon={Github} />
                         <SocialButton icon={Linkedin} />
                         <SocialButton icon={Instagram} />
-                    </div>
+                    </div> */}
 
                     <button 
                         onClick={() => onNavigate('home', 'core-team')}
@@ -116,11 +116,11 @@ export default function ContactView({ onNavigate }: ContactViewProps) {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <InputGroup label="First Name" icon={User} placeholder="Swayam" />
-                        <InputGroup label="Last Name" icon={User} placeholder="Patel" />
+                        <InputGroup label="First Name" icon={User} placeholder="First Name" />
+                        <InputGroup label="Last Name" icon={User} placeholder="Last Name" />
                     </div>
 
-                    <InputGroup label="Email Address" icon={Mail} type="email" placeholder="official@charusat.edu.in" />
+                    <InputGroup label="Email Address" icon={Mail} type="email" placeholder="Enter College Email ID only" />
                     
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-zinc-400 ml-1">Message</label>

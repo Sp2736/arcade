@@ -2,7 +2,10 @@
 
 import React, { useState, memo, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Github, Linkedin, ArrowRight, Database, Map, ShieldCheck, Cpu, Instagram, Mail } from "lucide-react";
+import { 
+  Github, Linkedin, ArrowRight, Database, Map, 
+  ShieldCheck, Cpu, Instagram, Mail, ChevronDown 
+} from "lucide-react";
 import Image from "next/image";
 
 // --- DATA ---
@@ -11,7 +14,7 @@ const TEAM = [
     id: 1,
     name: "Swayam Patel",
     studentId: "24DCS088",
-    image: "/swayam.jpg",
+    image: "/swayam.jpeg",
     role: "Lead Architect",
     desc: "Orchestrating the ecosystem. Bridging the gap between conceptual depth and production reality through scalable system design.",
     color: "from-blue-500 to-indigo-600",
@@ -83,19 +86,17 @@ const FEATURES = [
 // --- UPDATED PROPS INTERFACE ---
 interface HomeViewProps {
   onNavigate?: (view: "home" | "about" | "login" | "contact") => void;
-  scrollToId?: string | null; // <--- NEW PROP
+  scrollToId?: string | null;
 }
 
 export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
-  // --- NEW: AUTO-SCROLL LOGIC ---
+  // --- AUTO-SCROLL LOGIC ---
   useEffect(() => {
     if (scrollToId) {
       const element = document.getElementById(scrollToId);
       if (element) {
-        // Small delay to ensure the exit animation of the previous page is done
-        // and this page is fully mounted in the DOM
         setTimeout(() => {
             element.scrollIntoView({ behavior: "smooth", block: "center" });
         }, 500); 
@@ -103,16 +104,20 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
     }
   }, [scrollToId]);
 
-  // Fallback function if onNavigate is not provided
   const handleNavigate = (view: "home" | "about" | "login" | "contact") => {
     if (onNavigate) onNavigate(view);
+  };
+
+  const scrollToMission = () => {
+    const element = document.getElementById('mission');
+    if (element) element.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
     <div className="w-full flex flex-col items-center justify-start relative z-20">
       
       {/* ================= HERO SECTION ================= */}
-      <section className="w-full min-h-[90vh] flex flex-col items-center justify-center text-center px-4 md:px-24 relative">
+      <section className="w-full min-h-[95vh] flex flex-col items-center justify-center text-center px-4 md:px-24 relative">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -156,10 +161,28 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
             </button>
           </div>
         </motion.div>
+
+        {/* --- SCROLL INDICATOR --- */}
+        <motion.div 
+            onClick={scrollToMission}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, y: [0, 10, 0] }}
+            transition={{ 
+                opacity: { delay: 1.5, duration: 1 },
+                y: { repeat: Infinity, duration: 1.5, ease: "easeInOut" }
+            }}
+            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer z-20 group"
+        >
+            <span className="text-[10px] uppercase tracking-[0.3em] font-mono text-zinc-500 group-hover:text-white transition-colors">
+                Scroll
+            </span>
+            <ChevronDown size={24} className="text-white opacity-50 group-hover:opacity-100 transition-opacity" />
+        </motion.div>
+
       </section>
 
       {/* ================= MISSION BRIEF ================= */}
-      <section className="w-full px-6 md:px-24 py-16 border-y border-white/5 relative">
+      <section id="mission" className="w-full px-6 md:px-24 py-16 border-y border-white/5 relative">
         <div className="max-w-7xl mx-auto">
           <div className="mb-10 text-center md:text-left">
              <h2 className="text-4xl md:text-6xl font-black text-white mb-4 leading-tight">
@@ -190,7 +213,6 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
       </section>
 
       {/* ================= CORE TEAM ================= */}
-      {/* ADDED ID HERE FOR SCROLL TARGET */}
       <section id="core-team" className="w-full px-4 py-16 flex flex-col items-center relative z-10">
         <div className="text-center mb-12 relative z-10">
           <h2 className="text-blue-500 font-mono text-sm tracking-[0.3em] uppercase mb-2">The Architects</h2>
@@ -198,8 +220,6 @@ export default function HomeView({ onNavigate, scrollToId }: HomeViewProps) {
         </div>
 
         <div className="flex flex-col md:flex-row gap-6 items-start justify-center w-full max-w-6xl px-2">
-          {/* ... (Keep the TEAM.map loop exactly as is) ... */}
-           {/* (I am omitting the map content to save space, keep your existing code) */}
            {TEAM.map((member) => (
             <MemberCard 
               key={member.id}
@@ -225,7 +245,7 @@ interface Member {
   id: number;
   name: string;
   studentId: string;
-  image: string; // Changed to string
+  image: string; 
   role: string;
   desc: string;
   color: string;
@@ -257,34 +277,28 @@ const MemberCard = memo(({ member, isHovered, isDimmed, onHover, onLeave }: Memb
     >
         {/* --- TOP: IMAGE AREA --- */}
         <div className="p-3">
-            {/* FIXED HEIGHT (h-72) ensures image is always visible.
-                'relative' allows Next.js Image fill to work.
+            {/* UPDATED: Removed 'bg-gradient-to-br ${member.color}' 
+                Changed to 'bg-zinc-900' for a neutral backing 
             */}
-            <div className={`w-full h-72 rounded-[1.5rem] bg-gradient-to-br ${member.color} relative overflow-hidden`}>
-                 
-                 {/* ACTUAL IMAGE */}
+            <div className="w-full h-72 rounded-[1.5rem] bg-zinc-900 relative overflow-hidden">
                  <Image 
-                    src={member.image} 
-                    alt={member.name}
-                    fill
-                    className="object-cover object-top opacity-90 group-hover:scale-105 transition-transform duration-700"
-                    priority={true} // Ensures images load fast
+                   src={member.image} 
+                   alt={member.name}
+                   fill
+                   className="object-cover object-top opacity-90 group-hover:scale-105 transition-transform duration-700"
+                   priority={true} 
                  />
-
-                 {/* VISUAL OVERLAYS */}
-                 {/* Noise */}
                  <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-overlay z-10 pointer-events-none"></div>
-                 {/* Bottom Gradient for text readability if needed */}
                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20 pointer-events-none"></div>
-                 {/* Tint */}
-                 <div className={`absolute inset-0 bg-gradient-to-br ${member.color} mix-blend-overlay opacity-20 z-30 pointer-events-none`}></div>
+                 
+                 {/* UPDATED: Removed the tint overlay div entirely 
+                    <div className={`absolute inset-0 bg-gradient-to-br ${member.color} mix-blend-overlay opacity-20 z-30 pointer-events-none`}></div> 
+                 */}
             </div>
         </div>
 
         {/* --- BOTTOM: INFO & EXPANSION --- */}
         <div className="px-6 pb-6 pt-2">
-            
-            {/* Always Visible Header */}
             <div className="mb-2">
                 <h3 className="text-2xl font-black text-white tracking-tight leading-none mb-1">
                   {member.name}
@@ -298,7 +312,6 @@ const MemberCard = memo(({ member, isHovered, isDimmed, onHover, onLeave }: Memb
                 </div>
             </div>
 
-            {/* Hidden Content: Reveals on Hover */}
             <motion.div 
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ 
@@ -313,7 +326,6 @@ const MemberCard = memo(({ member, isHovered, isDimmed, onHover, onLeave }: Memb
                         {member.desc}
                     </p>
                     
-                    {/* Centered Icons */}
                     <div className="flex gap-4 justify-center w-full p-2">
                         <SocialIcon href={member.socials.github} icon={<Github size={18} />} color="hover:text-white" />
                         <SocialIcon href={member.socials.linkedin} icon={<Linkedin size={18} />} color="hover:text-blue-400" />

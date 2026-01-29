@@ -1,86 +1,82 @@
 import { 
-  Rocket, Search, Lightbulb, CheckCircle, PenTool, Layout, Code 
+  ShieldCheck, FileText, Map, Cpu, Compass, FileBadge, Link 
 } from "lucide-react";
 import { ModuleData } from "./types";
 
 export const modules: ModuleData[] = [
   {
     id: 1,
-    title: "Kick-off",
-    description: "Initialize the ARCADE environment, setup the Next.js repo, and configure database connections.",
-    outputs: ["Project roadmap", "Repo setup", "DB Schema"],
-    icon: Rocket,
-    time: "Week 1"
+    title: "Auth & Profile",
+    description: "The foundational entry point handling secure access and user identity management for all stakeholders.",
+    outputs: ["RBAC Login", "Student Stats", "Faculty Area"],
+    icon: ShieldCheck, // Represents Security/Auth
+    time: "Module A"
   },
   {
     id: 2,
-    title: "Auth",
-    description: "Secure user access control using JWT or NextAuth with role-based permissions.",
-    outputs: ["Login UI", "OAuth", "Session Logic"],
-    icon: CheckCircle,
-    time: "Week 2"
+    title: "Notes Portal",
+    description: "The platform backbone allowing subject-wise note sharing with a strict faculty approval workflow.",
+    outputs: ["Upload Queue", "Approval Flow", "Subject Filters"],
+    icon: FileText, // Represents Notes/Documents
+    time: "Module B"
   },
   {
     id: 3,
-    title: "Dashboard",
-    description: "The central hub for user activity, displaying real-time stats and overview metrics.",
-    outputs: ["Charts", "Sidebar", "Activity Logs"],
-    icon: Layout,
-    time: "Week 3"
+    title: "Roadmap",
+    description: "Visual, goal-oriented pathways guiding students through exam prep, placements, and skill acquisition.",
+    outputs: ["Exam Flow", "Skill Trees", "Progress Tracker"],
+    icon: Map, // Represents the Visual Map
+    time: "Module C"
   },
   {
     id: 4,
-    title: "Engine",
-    description: "Core logic for the arcade functionality, handling state and user interactions.",
-    outputs: ["State Mgmt", "Canvas", "Physics"],
-    icon: Code,
-    time: "Week 4-5"
+    title: "Skill Logic",
+    description: "A rule-based logic engine that compares a student's current tech stack against their target role requirements.",
+    outputs: ["Tech Selector", "Role Matching", "Gap Analysis"],
+    icon: Cpu, // Represents Logic/Processing
+    time: "Module D"
   },
   {
     id: 5,
-    title: "Ranking",
-    description: "Global ranking system to track top players and high scores across games.",
-    outputs: ["Sorting Algo", "Redis", "Real-time"],
-    icon: Lightbulb,
-    time: "Week 6"
+    title: "Guidance",
+    description: "Automated recommendations to bridge skill gaps, offering a suggested learning order and resource links.",
+    outputs: ["Learning Path", "Gap Filling", "Safe Logic"],
+    icon: Compass, // Represents Direction/Guidance
+    time: "Module E"
   },
   {
     id: 6,
-    title: "Market",
-    description: "Virtual economy for trading in-game assets or unlocking new features.",
-    outputs: ["Payments", "Inventory", "Assets"],
-    icon: Search,
-    time: "Week 7"
+    title: "Resume Vault",
+    description: "A privacy-safe repository of verified sample resumes categorized by domain, managed solely by admins.",
+    outputs: ["25+ Samples", "Role Categories", "Read-Only View"],
+    icon: FileBadge, // Represents Verified Documents
+    time: "Module F"
   },
   {
     id: 7,
-    title: "Deploy",
-    description: "Final quality assurance checks and deployment to Vercel/Edge network.",
-    outputs: ["Unit Tests", "CI/CD", "Production"],
-    icon: PenTool,
-    time: "Week 8"
+    title: "Resource Hub",
+    description: "A curated collection of external links for competitive programming, practice sites, and extra materials.",
+    outputs: ["CP Platforms", "Practice Links", "Domain Filter"],
+    icon: Link, // Represents External Resources
+    time: "Module G"
   },
 ];
 
 export const faqs = [
   {
-    question: "What is the tech stack?",
-    answer: "We are using Next.js 14 (App Router), TypeScript, Tailwind CSS for styling, and Framer Motion for animations."
+    question: "How does the Notes Approval work?",
+    answer: "Student uploads go to a pending queue. Faculty (or HODs) must approve them before they are published to the main feed."
   },
   {
-    question: "How do I contribute?",
-    answer: "Fork the repository, create a feature branch, and submit a PR. Check the 'Contributing' guide in the repo."
+    question: "Is there AI involved in the Guidance module?",
+    answer: "No. It uses safe, rule-based logic to compare your selected skills against defined role requirements to avoid 'hallucinations'."
   },
   {
-    question: "Is the database set up?",
-    answer: "Not yet. We are currently in the 'Kick-off' phase. The schema design is planned for Module 01."
+    question: "Can I upload my own resume to the Vault?",
+    answer: "No. The Resume Repository contains only verified examples uploaded by admins to ensure privacy and quality."
   },
   {
-    question: "Where are the assets?",
-    answer: "All static assets (images, fonts) are stored in the `/public` folder. Components are in `/src/components`."
-  },
-  {
-    question: "How to run tests?",
-    answer: "Run `npm run test` to execute the Jest test suite. Ensure your environment variables are configured."
+    question: "What tech stack is used?",
+    answer: "Next.js (React) is used for the frontend, making it the perfect choice for this interactive, component-based UI."
   }
 ];
