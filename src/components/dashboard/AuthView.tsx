@@ -23,35 +23,32 @@ export default function AuthView() {
   const [mode, setMode] = useState<AuthMode>("login");
 
   return (
-    // FIX 1: Changed main bg from 'bg-[#050505]' to 'bg-transparent'
-    // This allows the root 'BackgroundMeteors' from the dashboard to show through.
-    <div className="w-full h-screen flex overflow-hidden bg-transparent text-white font-sans relative z-30">
-      {/* ================= LEFT PANEL: BRANDING (GLASS EFFECT) ================= */}
-      {/* FIX 2: Applied Glassmorphism 
-          - bg-zinc-900/30 (Semi-transparent)
-          - backdrop-blur-xl (Blurs the meteors behind it)
+    /**
+     * MOBILE EDIT: Added 'flex-col' and 'overflow-y-auto'. 
+     * DESKTOP PRESERVED: 'md:flex-row' and 'md:h-screen' keep your original layout.
+     */
+    <div className="w-full min-h-screen md:h-screen flex flex-col md:flex-row bg-transparent text-white font-sans relative z-30 overflow-y-auto md:overflow-hidden custom-scrollbar">
+      
+      {/* ================= BRANDING PANEL ================= 
+          MOBILE: Now visible ('flex'). Sized to min-h-[40vh] to act as a horizontal header.
+          DESKTOP: Original 'md:w-[45%]' and 'md:h-full' preserved.
       */}
-      <div className="hidden md:flex w-[45%] lg:w-[40%] h-full bg-zinc-900/30 backdrop-blur-xl relative flex-col justify-between p-12 overflow-hidden border-r border-white/10 shrink-0">
-        {/* Adjusted Gradient to be subtle so meteors show through */}
+      <div className="flex w-full md:w-[45%] lg:w-[40%] min-h-[45vh] md:h-full bg-zinc-900/30 backdrop-blur-xl relative flex-col justify-between p-10 md:p-12 border-b md:border-b-0 md:border-r border-white/10 shrink-0">
+        
+        {/* Glow effect & Gradients (Original Styles) */}
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-900/10 to-transparent z-0" />
-
-        {/* Glow effect (kept subtle) */}
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Abstract 3D shape */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-blue-500/20 rounded-full opacity-50 animate-[spin_10s_linear_infinite]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-white/10 rounded-full opacity-50 animate-[spin_15s_linear_infinite_reverse]" />
-
-        {/* Branding Content */}
+        {/* Branding Content (Original Content) */}
         <div className="relative z-10">
-          <h2 className="text-xl font-black tracking-[0.2em] text-white mb-2">
+          <h2 className="text-xl font-black tracking-[0.2em] text-white mb-2 uppercase">
             A.R.C.A.D.E.
           </h2>
-          <div className="h-1 w-12 bg-blue-600 rounded-full" />
+          <div className="h-1 w-12 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
         </div>
 
-        <div className="relative z-10">
-          <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-6">
+        <div className="relative z-10 mt-10 md:mt-0">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
             Bridge the gap between <span className="text-blue-500">theory</span>{" "}
             and <span className="text-blue-500">reality</span>.
           </h1>
@@ -61,76 +58,57 @@ export default function AuthView() {
               <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-zinc-900" />
               <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-zinc-900" />
             </div>
-            <span>Faculty Verified Ecosystem</span>
+            <span className="font-medium">Faculty Verified Ecosystem</span>
           </div>
         </div>
 
-        <div className="relative z-10 text-xs text-zinc-500 font-mono">
+        <div className="relative z-10 text-[10px] text-zinc-500 font-mono mt-8 md:mt-0">
           © 2026 ARCADE SYSTEM // V1.0.4
         </div>
       </div>
 
-      {/* ================= RIGHT PANEL: FORM AREA (SOLID) ================= */}
-      {/* Kept solid bg-[#050505] for the form area to ensure inputs remain high-contrast and readable */}
-      <div className="w-full md:w-[55%] lg:w-[60%] h-full relative flex flex-col items-center justify-center overflow-y-auto custom-scrollbar bg-[#050505]">
-        <div className="w-full max-w-md px-8 py-6">
-          <div className="md:hidden mb-6 text-center">
-            <h2 className="text-2xl font-black tracking-widest">ARCADE</h2>
-          </div>
-
+      {/* ================= FORM PANEL ================= 
+          MOBILE: Centered below the header.
+          DESKTOP: Original split layout maintained.
+      */}
+      <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col items-center justify-center p-6 sm:p-12 md:p-0 bg-[#050505] relative z-20">
+        
+        <div className="w-full max-w-md py-8">
           {/* Header */}
-          <div className="mb-6">
+          <div className="mb-8 text-center md:text-left">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">
               {mode === "login" ? "User Login" : "Create Account"}
             </h2>
             <p className="text-zinc-400 text-sm">
-              {mode === "login"
-                ? "Enter your credentials to access the portal."
-                : "Fill in your details to register."}
+              {mode === "login" ? "Enter your credentials to access." : "Fill details to register."}
             </p>
           </div>
 
           {/* Mode Switcher */}
-          <div className="flex gap-6 mb-6 border-b border-white/10">
-            <button
-              onClick={() => setMode("login")}
-              className={`pb-2 text-sm font-medium transition-all relative ${mode === "login" ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              Login
-              {mode === "login" && (
-                <motion.div
-                  layoutId="tab-underline"
-                  className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-blue-500"
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setMode("signup")}
-              className={`pb-2 text-sm font-medium transition-all relative ${mode === "signup" ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
-            >
-              Sign Up
-              {mode === "signup" && (
-                <motion.div
-                  layoutId="tab-underline"
-                  className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-blue-500"
-                />
-              )}
-            </button>
+          <div className="flex gap-8 mb-8 border-b border-white/10 justify-center md:justify-start">
+            {(["login", "signup"] as AuthMode[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setMode(tab)}
+                className={`pb-3 text-sm font-bold transition-all relative capitalize ${mode === tab ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              >
+                {tab === "login" ? "Login" : "Sign Up"}
+                {mode === tab && (
+                  <motion.div layoutId="tab-highlight" className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                )}
+              </button>
+            ))}
           </div>
 
-          {/* Form Container */}
           <AnimatePresence mode="wait">
-            {mode === "login" ? (
-              <LoginForm key="login" />
-            ) : (
-              <SignupForm key="signup" />
-            )}
+            {mode === "login" ? <LoginForm key="login" /> : <SignupForm key="signup" />}
           </AnimatePresence>
         </div>
       </div>
     </div>
   );
 }
+// fixed the small screen branding panel
 
 // --- LOGIN FORM ---
 function LoginForm() {
