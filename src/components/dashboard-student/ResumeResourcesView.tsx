@@ -9,7 +9,8 @@ interface ResourceViewProps {
 }
 
 export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: ResourceViewProps) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // We use initialTab directly since we removed the ability to switch tabs internally
+  const activeTab = initialTab;
 
   // Theme Constants
   const textMain = isDark ? "text-white" : "text-zinc-900";
@@ -19,6 +20,7 @@ export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: 
     <div className="h-full flex flex-col space-y-6">
       
       {/* --- HEADER --- */}
+      {/* Toggle buttons removed. Title adapts to prop. */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${textMain}`}>
@@ -29,30 +31,6 @@ export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: 
                 ? "Verified formats approved by the placement cell." 
                 : "Curated external platforms to sharpen your skills."}
           </p>
-        </div>
-        
-        {/* Consistent Tab Switcher */}
-        <div className={`flex p-1 rounded-lg border ${isDark ? "bg-zinc-800/50 border-white/5" : "bg-zinc-100 border-zinc-200"}`}>
-            <button 
-                onClick={() => setActiveTab("resumes")}
-                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${
-                    activeTab === "resumes" 
-                        ? (isDark ? "bg-zinc-800 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
-                        : "text-zinc-500"
-                }`}
-            >
-                Resumes
-            </button>
-            <button 
-                onClick={() => setActiveTab("resources")}
-                className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${
-                    activeTab === "resources" 
-                        ? (isDark ? "bg-zinc-800 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
-                        : "text-zinc-500"
-                }`}
-            >
-                Resources
-            </button>
         </div>
       </div>
 

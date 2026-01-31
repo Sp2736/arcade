@@ -89,8 +89,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
       </div>
 
       {/* --- NOTES GRID --- */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar pr-2 pb-10">
-        <NoteCard 
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar pr-2 pb-10">        <NoteCard 
             title="OS: Deadlocks & Scheduling"
             desc="Handwritten notes for Unit 3, covers Banker's Algo."
             subject="Oper. Sys"
