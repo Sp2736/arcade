@@ -1,4 +1,4 @@
-import { modules } from "@/src/components/dashboard/data";
+import { modules } from "@/src/components/home/data";
 
 // We convert your 'modules' data into a text format the AI can read
 const modulesContext = modules.map(m => 

@@ -1,9 +1,9 @@
-import ArcadeDashboard from "@/src/components/dashboard/ArcadeDashboard";
+import MainLayout from "@/src/components/home/MainLayout";
 
 export default function Home() {
   return (
     <main>
-      <ArcadeDashboard />
+      <MainLayout />
     </main>
   );
 }

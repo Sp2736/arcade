@@ -13,7 +13,7 @@ import BackgroundMeteors from "./BackgroundMeteors";
 import AuthView from "./AuthView";
 import ContactView from "./ContactView";
 
-export default function ArcadeDashboard() {
+export default function MainLayout() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
