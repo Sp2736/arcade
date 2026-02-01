@@ -19,6 +19,9 @@ export default function AboutPortal() {
     exit: { y: -100, opacity: 0 },
   };
 
+  // Check if we are on the last module
+  const isLastModule = activeId === modules.length;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -53,14 +56,47 @@ export default function AboutPortal() {
                     </p>
                     
                     <div className="mt-10 flex items-center gap-4">
+                        {/* Prev Button */}
                         <button onClick={handlePrev} disabled={activeId === 1} className="group flex items-center gap-2 px-6 py-3 rounded-full border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition-all">
                             <ChevronLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
                             <span className="font-bold">Prev</span>
                         </button>
-                        <button onClick={handleNext} disabled={activeId === modules.length} className="group flex items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 disabled:opacity-50 disabled:hover:bg-white transition-all">
-                            <span>Next</span>
-                            <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                        </button>
+
+                        {/* Logic: If Last Module -> Split behavior. Else -> Normal Next button. */}
+                        {isLastModule ? (
+                            <>
+                                {/* Desktop: Standard Disabled Next Button (Hidden on Mobile) */}
+                                <button 
+                                    disabled 
+                                    className="hidden md:flex group items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full opacity-50 cursor-not-allowed"
+                                >
+                                    <span>Next</span>
+                                    <ChevronRight size={20} />
+                                </button>
+
+                                {/* Mobile Only: Head Back Button (Resets to Start) */}
+                                <button 
+                                    onClick={() => setActiveId(1)} 
+                                    className="flex md:hidden group items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
+                                >
+                                    <span>Head Back</span>
+                                    {/* Icon rotates 180deg to point left */}
+                                    <ChevronRight 
+                                        size={20} 
+                                        className="rotate-180 transition-transform" 
+                                    />
+                                </button>
+                            </>
+                        ) : (
+                            /* Standard Next Button (Shared across devices) */
+                            <button 
+                                onClick={handleNext} 
+                                className="group flex items-center gap-2 px-8 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-all"
+                            >
+                                <span>Next</span>
+                                <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        )}
                     </div>
                 </motion.div>
             </AnimatePresence>
