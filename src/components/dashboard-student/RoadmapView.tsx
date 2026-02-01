@@ -21,7 +21,6 @@ export default function RoadmapView({ isDark, targetRole, checkedSkills, setChec
   const isAdvancedDone = roleData.advanced.every((s: string) => checkedSkills.includes(s));
 
   // --- NEW STAMP LOGIC ---
-  // A section is "NEW" if it is unlocked BUT no skills in it are checked yet.
   const isAdvancedNew = isMandatoryDone && !roleData.advanced.some((s: string) => checkedSkills.includes(s));
   const isOptionalNew = isAdvancedDone && !roleData.optional.some((s: string) => checkedSkills.includes(s));
 
@@ -79,10 +78,8 @@ export default function RoadmapView({ isDark, targetRole, checkedSkills, setChec
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* Mandatory - Always Unlocked */}
         <RoadmapColumn title="Mandatory" colorClass="border-red-500/50" badgeClass="bg-red-500 text-white" skills={roleData.mandatory} checkedSkills={checkedSkills} onCheck={(s: string) => handleCheck(s, "mandatory")} isDark={isDark} cardBg={cardBg} />
 
-        {/* Advanced - Locked until Mandatory done */}
         <RoadmapColumn 
             title="Advanced" 
             colorClass="border-blue-500/50" 
@@ -96,7 +93,6 @@ export default function RoadmapView({ isDark, targetRole, checkedSkills, setChec
             isNew={isAdvancedNew}
         />
 
-        {/* Optional - Locked until Advanced done */}
         <RoadmapColumn 
             title="Optional" 
             colorClass="border-emerald-500/50" 
@@ -119,15 +115,17 @@ const RoadmapColumn = ({ title, colorClass, badgeClass, skills, checkedSkills, o
     if (!skills) return null; 
 
     return (
-        <div className={`relative rounded-2xl border-t-4 p-4 transition-all duration-500 ${cardBg} ${colorClass} ${isLocked ? "opacity-50 blur-[2px] grayscale pointer-events-none select-none" : "opacity-100"}`}>
+        <div className={`relative rounded-2xl border-t-4 p-4 transition-all duration-500 ${cardBg} ${colorClass}`}>
             
-            {/* LOCK OVERLAY */}
+            {/* LOCK OVERLAY (Rendered ON TOP of the content, no blur on this) */}
             {isLocked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    <div className="p-3 bg-zinc-900 rounded-full border border-white/20 shadow-xl">
-                        <Lock size={24} className="text-zinc-400" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                    <div className={`p-4 rounded-full border shadow-2xl backdrop-blur-md ${isDark ? "bg-black/50 border-white/20" : "bg-white/50 border-zinc-300"}`}>
+                        <Lock size={28} className={isDark ? "text-zinc-400" : "text-zinc-600"} />
                     </div>
-                    <span className="mt-2 text-xs font-bold text-zinc-500 bg-zinc-900/80 px-2 py-1 rounded">LOCKED</span>
+                    <span className={`mt-3 text-xs font-black tracking-widest px-3 py-1 rounded-full ${isDark ? "bg-black/80 text-zinc-400" : "bg-white/80 text-zinc-600"}`}>
+                        LOCKED
+                    </span>
                 </div>
             )}
 
@@ -135,18 +133,19 @@ const RoadmapColumn = ({ title, colorClass, badgeClass, skills, checkedSkills, o
             {!isLocked && isNew && (
                 <motion.div 
                     initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 12 }} 
-                    className="absolute -top-6 -right-4 z-20 bg-yellow-400 text-black font-black text-xs px-3 py-1 shadow-lg border-2 border-white rotate-12"
+                    className="absolute -top-6 -right-4 z-30 bg-yellow-400 text-black font-black text-xs px-3 py-1 shadow-lg border-2 border-white rotate-12"
                 >
                     NEW!!
                 </motion.div>
             )}
 
-            <div className="flex items-center justify-between mb-6">
-                <h3 className={`font-bold ${isDark ? "text-white" : "text-zinc-800"}`}>{title}</h3>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${badgeClass}`}>{skills.length} Nodes</span>
-            </div>
-            
-            <div className="space-y-3">
+            {/* CONTENT WRAPPER (This gets blurred) */}
+            <div className={`space-y-3 transition-all duration-500 ${isLocked ? "opacity-40 blur-[3px] grayscale pointer-events-none select-none" : "opacity-100"}`}>
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className={`font-bold ${isDark ? "text-white" : "text-zinc-800"}`}>{title}</h3>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${badgeClass}`}>{skills.length} Nodes</span>
+                </div>
+                
                 {skills.map((skill: string) => {
                     const isChecked = checkedSkills.includes(skill);
                     return (
