@@ -1,0 +1,8 @@
+.LOG 
+
+23:55 31-01-2026
+Today’s work was focused on structuring and laying the foundation for the student-side module of the ARCADE project. I designed the complete skeleton for student-facing components and organized them into a clear, scalable directory structure, separating dashboard-specific logic from home-level components. Core student dashboard views such as overview, notes, roadmaps, skill navigation, resume resources, and profile handling were created as independent components to ensure modularity and easier future extension.
+
+Alongside structural work, I worked on UX-level refinements for the Resource Vault. I planned visual indicators to clearly distinguish uploader roles by replacing generic note icons with explicit “Faculty” and “Student” stamps, improving content clarity at a glance. I also enhanced metadata visibility on resource cards by introducing an “Approved By” field to display the verifying faculty for student-uploaded materials, reinforcing trust and accountability in shared content.
+
+Additionally, I addressed UI consistency issues by planning a proper color palette for dropdown elements and improving hover-state visibility for toggle actions like Browse Library / My Uploads in light mode, where default greys lacked contrast. I removed the redundant “Search Nodes” element from the top bar and designed a notification system to surface recent uploads across materials, roadmaps, and resumes, including uploader and verifier details. Special attention was given to first-time user experience by defining a session-based notification flow that initially shows a warm greeting and then transitions to contextual updates, with notifications expiring per session unless manually dismissed by the user.
