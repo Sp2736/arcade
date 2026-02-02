@@ -12,9 +12,8 @@ import RoadmapView from "./RoadmapView";
 import SkillNavigator from "./SkillNavigator";
 import ResumeResourcesView from "./ResumeResourcesView";
 import DashboardCursor from "./DashboardCursor"; 
-import InteractiveBackground from "./InteractiveBackground"; 
 
-// --- ROADMAP DATA SOURCE ---
+// --- DATA SOURCE ---
 export const ROADMAP_DATA: any = {
     "Frontend Developer": {
         mandatory: ["HTML5 Semantic", "CSS3 Flexbox/Grid", "JavaScript (ES6+)", "Git Basics", "React.js Fundamentals"],
@@ -50,16 +49,17 @@ export default function StudentDashboard() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // --- ROLE & PROGRESS STATE ---
   const [targetRole, setTargetRole] = useState("Frontend Developer"); 
   const [checkedSkills, setCheckedSkills] = useState<string[]>([]);
 
-  // Unlock Logic
+  // --- UNLOCK LOGIC ---
   const currentRoleData = ROADMAP_DATA[targetRole] || ROADMAP_DATA["Frontend Developer"];
   const mandatoryDone = currentRoleData.mandatory.every((s: string) => checkedSkills.includes(s));
   const advancedCount = currentRoleData.advanced.filter((s: string) => checkedSkills.includes(s)).length;
   const isRoleUnlocked = mandatoryDone && advancedCount >= 2;
 
-  // Notifications
+  // --- NOTIFICATIONS ---
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [isNewUser, setIsNewUser] = useState(true); 
@@ -67,6 +67,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     setNotifications([]);
     const timers: NodeJS.Timeout[] = [];
+
     if (isNewUser) {
         timers.push(setTimeout(() => {
             addNotification({ title: "Welcome to ARCADE!", desc: "Your personalized career ecosystem is ready.", type: "success", time: "Now" });
@@ -76,6 +77,7 @@ export default function StudentDashboard() {
     timers.push(setTimeout(() => {
         addNotification({ title: "New Material Verified", desc: "Topic: 'Process Scheduling' (OS) uploaded by Rohan Das.", type: "info", time: "2m ago" });
     }, 4000));
+
     return () => timers.forEach((t) => clearTimeout(t));
   }, []);
 
@@ -89,19 +91,27 @@ export default function StudentDashboard() {
   // Theme Constants
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const borderMain = isDarkMode ? "border-white/5" : "border-zinc-200";
+  // Main background colors - restored to solid values
+  const bgMain = isDarkMode ? "bg-[#050505]" : "bg-[#f8fafc]"; 
   const panelBg = isDarkMode ? "bg-[#09090b]" : "bg-white"; 
 
   return (
-    // FIX: Removed background colors here. The InteractiveBackground handles the color canvas.
-    // Added 'relative' to establish stacking context if needed, but the canvas uses 'fixed' so it's fine.
-    <div className={`flex h-screen w-full font-sans overflow-hidden transition-colors duration-300 ${textMain}`}>
+    <div className={`flex h-screen w-full font-sans overflow-hidden transition-colors duration-300 ${bgMain} ${textMain}`}>
       
       <DashboardCursor />
 
-      {/* DYNAMIC BACKGROUND (Z-[-1]) */}
-      <InteractiveBackground isDarkMode={isDarkMode} />
+      {/* Static Background Grid (Optional aesthetic texture) */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0" 
+        style={{
+            backgroundImage: isDarkMode 
+                ? "linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)"
+                : "linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px)",
+            backgroundSize: "40px 40px"
+        }}
+      />
 
-      {/* Sidebar (Z-30) */}
+      {/* Sidebar */}
       <div className="relative z-30 h-full">
         <StudentSidebar 
             activeView={currentView} 
@@ -113,15 +123,21 @@ export default function StudentDashboard() {
         />
       </div>
 
-      {/* Main Content (Z-20) */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col h-full relative z-20 overflow-hidden">
         
+        {/* Header */}
         <header className={`h-16 md:h-20 border-b backdrop-blur-md flex items-center justify-between px-4 md:px-8 relative z-50 transition-colors duration-300 ${borderMain} ${isDarkMode ? "bg-zinc-900/30" : "bg-white/50"}`}>
+            
             <div className="flex items-center gap-3 md:gap-4">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-zinc-500 hover:text-zinc-800 transition-colors"><Menu size={24} /></button>
                 <div>
-                    <h1 className="text-lg md:text-xl font-bold capitalize truncate max-w-[150px] md:max-w-none">{currentView.replace("-", " ")}</h1>
-                    <p className={`hidden md:block text-xs font-mono ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>SEM 4 // COMPUTER ENGINEERING</p>
+                    <h1 className="text-lg md:text-xl font-bold capitalize truncate max-w-[150px] md:max-w-none">
+                        {currentView.replace("-", " ")}
+                    </h1>
+                    <p className={`hidden md:block text-xs font-mono ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
+                        SEM 4 // COMPUTER ENGINEERING
+                    </p>
                 </div>
             </div>
 
@@ -130,14 +146,24 @@ export default function StudentDashboard() {
                     {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
+                {/* Notifications */}
                 <div className="relative">
-                    <button onClick={() => setShowNotifPanel(!showNotifPanel)} className={`relative p-2 transition-colors ${showNotifPanel ? "text-blue-500" : "text-zinc-400"}`}>
+                    <button 
+                        onClick={() => setShowNotifPanel(!showNotifPanel)} 
+                        className={`relative p-2 transition-colors ${showNotifPanel ? "text-blue-500" : "text-zinc-400"}`}
+                    >
                         <Bell size={20} />
                         {notifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />}
                     </button>
+                    
                     <AnimatePresence>
                         {showNotifPanel && (
-                            <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} className={`absolute right-0 top-12 w-80 md:w-96 rounded-2xl border shadow-2xl overflow-hidden z-[100] ${panelBg} ${isDarkMode ? "border-white/10" : "border-zinc-200"}`}>
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                className={`absolute right-0 top-14 w-80 md:w-96 rounded-2xl border shadow-2xl overflow-hidden z-[100] ${panelBg} ${isDarkMode ? "border-white/10" : "border-zinc-200"}`}
+                            >
                                 <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-white/10 bg-[#09090b]" : "border-zinc-100 bg-white"}`}>
                                     <h3 className={`font-bold text-sm ${textMain}`}>Notifications</h3>
                                     <div className="flex gap-3 items-center">
@@ -145,16 +171,25 @@ export default function StudentDashboard() {
                                         <button onClick={() => setShowNotifPanel(false)} className={`p-1 rounded transition-colors ${isDarkMode ? "hover:bg-white/10 text-zinc-400" : "hover:bg-zinc-200 text-zinc-600"}`}><X size={14}/></button>
                                     </div>
                                 </div>
+
                                 <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                    {notifications.length === 0 ? <div className={`p-8 text-center text-xs py-12 ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>No new notifications</div> : notifications.map(n => (
-                                        <div key={n.id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-white/5 hover:bg-white/5" : "border-zinc-100 hover:bg-zinc-50"}`}>
-                                            <button onClick={() => removeNotification(n.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
-                                            <div className="flex gap-3">
-                                                <div className={`mt-0.5 ${n.type === "success" ? "text-green-500" : "text-blue-500"}`}>{n.type === "success" ? <CheckCircle size={16} /> : <Info size={16} />}</div>
-                                                <div><h4 className={`text-sm font-bold leading-none mb-1 ${textMain}`}>{n.title}</h4><p className={`text-xs leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.desc}</p><span className="text-[10px] opacity-40 mt-1 block">{n.time}</span></div>
+                                    {notifications.length === 0 ? (
+                                        <div className={`p-8 text-center text-xs py-12 ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>No new notifications</div>
+                                    ) : (
+                                        notifications.map(n => (
+                                            <div key={n.id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-white/5 hover:bg-white/5" : "border-zinc-100 hover:bg-zinc-50"}`}>
+                                                <button onClick={() => removeNotification(n.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
+                                                <div className="flex gap-3">
+                                                    <div className={`mt-0.5 ${n.type === "success" ? "text-green-500" : "text-blue-500"}`}>{n.type === "success" ? <CheckCircle size={16} /> : <Info size={16} />}</div>
+                                                    <div>
+                                                        <h4 className={`text-sm font-bold leading-none mb-1 ${textMain}`}>{n.title}</h4>
+                                                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.desc}</p>
+                                                        <span className="text-[10px] opacity-40 mt-1 block">{n.time}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -162,8 +197,13 @@ export default function StudentDashboard() {
                 </div>
 
                 <button onClick={() => setCurrentView("profile")} className="flex items-center gap-3 pl-3 md:pl-6 border-l border-white/10">
-                    <div className="hidden md:block text-right"><p className="text-sm font-bold">Swayam</p><p className="text-[10px] text-blue-500">24DCS088</p></div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden border shadow-sm"><img src="/swayam.jpeg" alt="Swayam" className="w-full h-full object-cover" /></div>
+                    <div className="hidden md:block text-right">
+                        <p className="text-sm font-bold">Swayam</p>
+                        <p className="text-[10px] text-blue-500">24DCS088</p>
+                    </div>
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden border shadow-sm">
+                         <img src="/swayam.jpeg" alt="Swayam" className="w-full h-full object-cover" />
+                    </div>
                 </button>
             </div>
         </header>
