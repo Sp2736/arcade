@@ -139,7 +139,7 @@ export default function StudentDashboard() {
                         {currentView.replace("-", " ")}
                     </h1>
                     <p className={`hidden md:block text-xs font-mono ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
-                        SEM 4 // COMPUTER ENGINEERING
+                        MODULE
                     </p>
                 </div>
             </div>
