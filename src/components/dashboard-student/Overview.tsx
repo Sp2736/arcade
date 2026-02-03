@@ -12,7 +12,6 @@ interface OverviewProps {
   targetRole: string; 
 }
 
-// Animation Variants
 const containerVar = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1 } }
@@ -37,7 +36,7 @@ export default function Overview({ isDark, targetRole }: OverviewProps) {
           </p>
         </div>
         
-        <div className={`px-5 py-2 rounded-xl flex items-center gap-3 border ${isDark ? "bg-blue-900/10 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-700"}`}>
+        <div className={`px-5 py-2 rounded-xl flex items-center gap-3 border ${isDark ? "bg-blue-900/20 border-blue-500/20 text-blue-400" : "bg-blue-50 border-blue-200 text-blue-700"}`}>
              <Award size={18} /> 
              <span className="font-bold text-sm">Skill Score: 68</span>
         </div>
@@ -150,19 +149,22 @@ const ExpandableCard = ({ data, isDark, isHovered, isBlurred, onHover, onLeave }
     };
     const t = theme[color];
 
+    // UPDATED CARD BG: Solid background for distinct look
+    const bgClass = isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
+
     return (
         <div 
             onMouseEnter={onHover}
             onMouseLeave={onLeave}
             className={`relative h-96 rounded-3xl border transition-all duration-500 cursor-default overflow-hidden flex flex-col
-                ${isDark ? "bg-zinc-900/40 border-white/5" : "bg-white border-zinc-200 shadow-sm"}
+                ${bgClass}
                 ${isBlurred ? "opacity-40 scale-95 blur-[2px]" : "opacity-100 scale-100 blur-0"}
                 ${isHovered ? `scale-105 shadow-2xl z-20 ${t.glow}` : "z-0"}
             `}
         >
-            {/* ICON & TITLE (Moves Up on Hover) */}
+            {/* ICON & TITLE */}
             <div className={`absolute inset-0 flex flex-col items-center justify-center transition-all duration-500 px-6 z-10 ${isHovered ? "-translate-y-32 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
-                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 ${isDark ? "bg-zinc-800" : "bg-zinc-100"}`}>
+                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-500 ${isDark ? "bg-black" : "bg-zinc-100"}`}>
                     <Icon size={40} className={t.icon} />
                 </div>
                 <h3 className={`text-xl font-black uppercase tracking-tight text-center ${isDark ? "text-white" : "text-zinc-900"} ${t.icon}`}>
@@ -170,12 +172,11 @@ const ExpandableCard = ({ data, isDark, isHovered, isBlurred, onHover, onLeave }
                 </h3>
             </div>
 
-            {/* EXPANDED CONTENT (Slides Up) */}
+            {/* EXPANDED CONTENT */}
             <div className={`absolute inset-0 z-20 p-6 flex flex-col items-center justify-center text-center transition-all duration-500 transform 
                 ${isHovered ? "translate-y-0 opacity-100 pointer-events-auto" : "translate-y-20 opacity-0 pointer-events-none"}
             `}>
                 
-                {/* Header */}
                 <div className={`flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-widest ${t.icon}`}>
                     <Icon size={14} /> {title}
                 </div>
@@ -184,8 +185,6 @@ const ExpandableCard = ({ data, isDark, isHovered, isBlurred, onHover, onLeave }
                     {desc}
                 </p>
                 
-                {/* LINK DOCK - Fixed spacing for tooltips */}
-                {/* gap-y-8 ensures enough vertical space for the tooltip to appear without overlapping the row below */}
                 <div className="flex flex-wrap justify-center gap-x-4 gap-y-8 relative z-30 pb-2">
                     {links.map((link: any, i: number) => (
                         <a 
@@ -194,12 +193,10 @@ const ExpandableCard = ({ data, isDark, isHovered, isBlurred, onHover, onLeave }
                             target="_blank" 
                             rel="noopener noreferrer"
                             className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all hover:scale-125 hover:-translate-y-1 relative group/icon cursor-pointer shadow-lg hover:z-50
-                                ${isDark ? "bg-zinc-800 border-zinc-700 text-white hover:bg-white hover:text-black" : "bg-white border-zinc-200 text-black hover:bg-black hover:text-white"}
+                                ${isDark ? "bg-black border-zinc-700 text-white hover:bg-white hover:text-black" : "bg-white border-zinc-200 text-black hover:bg-black hover:text-white"}
                             `}
                         >
                             <BrandLogo brand={link.brand} />
-                            
-                            {/* Tooltip - Positioned in the reserved gap space */}
                             <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[9px] font-bold bg-black text-white px-2 py-1 rounded opacity-0 group-hover/icon:opacity-100 transition-opacity whitespace-nowrap pointer-events-none shadow-lg z-50">
                                 {link.name}
                             </span>
@@ -211,7 +208,6 @@ const ExpandableCard = ({ data, isDark, isHovered, isBlurred, onHover, onLeave }
     );
 };
 
-// --- LOGO HELPER COMPONENT (Inline SVGs) ---
 const BrandLogo = ({ brand }: { brand: string }) => {
     switch (brand) {
         case "google": return <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg>;
@@ -239,8 +235,9 @@ const ActionCard = ({ title, desc, icon: Icon, color, isDark }: any) => {
         purple: isDark ? "text-purple-400 border-purple-500/30 bg-purple-500/10" : "text-purple-700 border-purple-200 bg-purple-50",
         orange: isDark ? "text-orange-400 border-orange-500/30 bg-orange-500/10" : "text-orange-700 border-orange-200 bg-orange-50",
     };
+    // UPDATED CARD BG
     return (
-        <div className={`p-5 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${isDark ? "bg-[#09090b]/40 border-white/5" : "bg-white border-zinc-200 shadow-sm"}`}>
+        <div className={`p-5 rounded-2xl border transition-all hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm"}`}>
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 border ${colors[color]}`}><Icon size={20} /></div>
             <h4 className={`text-lg font-bold ${isDark ? "text-white" : "text-zinc-900"}`}>{title}</h4>
             <p className="text-xs text-zinc-500 mt-1">{desc}</p>

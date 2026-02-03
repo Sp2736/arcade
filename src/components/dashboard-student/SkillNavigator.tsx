@@ -11,37 +11,28 @@ interface SkillNavigatorProps {
   isDark: boolean;
 }
 
-// ... [SURVEY_QUESTIONS, TECH_CATEGORIES, CAREER_RESULTS data arrays remain unchanged] ...
+// ... [SURVEY_QUESTIONS array remains the same] ...
 const SURVEY_QUESTIONS = [
-  // FRONTEND
   { id: 1, text: "I care deeply about pixel-perfect designs and UI aesthetics.", role: "Frontend Developer" },
   { id: 2, text: "I enjoy optimizing website load speeds and animation smoothness.", role: "Frontend Developer" },
   { id: 3, text: "Ensuring an app works on all screen sizes (mobile/desktop) is satisfying.", role: "Frontend Developer" },
   { id: 4, text: "I prefer working with visual components over database queries.", role: "Frontend Developer" },
   { id: 5, text: "I get excited about new CSS features and layout techniques.", role: "Frontend Developer" },
-
-  // BACKEND
   { id: 6, text: "I prefer logic and data processing over making things look pretty.", role: "Backend Developer" },
   { id: 7, text: "I enjoy designing efficient database schemas and relationships.", role: "Backend Developer" },
   { id: 8, text: "Security, authentication, and API protection interest me.", role: "Backend Developer" },
   { id: 9, text: "I like optimizing server response times and handling high traffic.", role: "Backend Developer" },
   { id: 10, text: "Debugging a complex logic error is more rewarding than fixing a layout bug.", role: "Backend Developer" },
-
-  // DATA SCIENTIST
   { id: 11, text: "I love finding hidden patterns in large, messy datasets.", role: "Data Scientist" },
   { id: 12, text: "I am comfortable with statistics, probability, and math.", role: "Data Scientist" },
   { id: 13, text: "Predicting future trends using historical data fascinates me.", role: "Data Scientist" },
   { id: 14, text: "I enjoy creating visualizations (charts/graphs) to explain data.", role: "Data Scientist" },
   { id: 15, text: "Building models that 'learn' from data is exciting.", role: "Data Scientist" },
-
-  // DEVOPS
   { id: 16, text: "I hate doing the same task twice; I'd rather automate it.", role: "DevOps Engineer" },
   { id: 17, text: "I am interested in how code gets from a laptop to a production server.", role: "DevOps Engineer" },
   { id: 18, text: "Managing cloud infrastructure (AWS/Azure) sounds cool.", role: "DevOps Engineer" },
   { id: 19, text: "I care about system uptime, reliability, and monitoring logs.", role: "DevOps Engineer" },
   { id: 20, text: "Containerization (Docker) and orchestration (Kubernetes) interest me.", role: "DevOps Engineer" },
-
-  // FULL STACK
   { id: 21, text: "I want to own a feature from the database all the way to the UI.", role: "Full Stack Developer" },
   { id: 22, text: "I get bored doing just one thing; I like context switching.", role: "Full Stack Developer" },
   { id: 23, text: "I want to be able to build a complete product (MVP) by myself.", role: "Full Stack Developer" },
@@ -140,7 +131,8 @@ export default function SkillNavigator({ isDark }: SkillNavigatorProps) {
     }, 2500);
   };
 
-  const cardBg = isDark ? "bg-zinc-900/40 border-white/5" : "bg-white border-zinc-200 shadow-sm";
+  // UPDATED CARD BG: More distinct in Dark Mode
+  const cardBg = isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
 
   return (
     <div className={`h-full flex flex-col relative overflow-hidden rounded-3xl border transition-all duration-500 ${cardBg}`}>
@@ -325,7 +317,7 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
                     {secondaryRoles.map((role: string) => {
                         const altData = CAREER_RESULTS[role] || CAREER_RESULTS["Full Stack Developer"];
                         return (
-                            <div key={role} className={`p-5 rounded-2xl border transition-all hover:border-zinc-500/50 ${isDark ? "bg-zinc-900/50 border-white/5" : "bg-zinc-50 border-zinc-200"}`}>
+                            <div key={role} className={`p-5 rounded-2xl border transition-all hover:border-zinc-500/50 ${isDark ? "bg-zinc-900/50 border-white/5" : "bg-white border-zinc-200"}`}>
                                 <div className="flex justify-between items-start mb-4">
                                     <h4 className={`text-lg font-black uppercase ${isDark ? "text-zinc-300" : "text-zinc-800"}`}>{role}</h4>
                                     <span className="text-xs font-bold bg-green-500/10 text-green-500 px-2 py-1 rounded">{altData.salary}</span>
@@ -344,13 +336,13 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
             </div>
 
             <div className="mt-auto flex gap-4">
-                {/* --- FIXED: RESTART BUTTON STYLING --- */}
+                {/* --- FIXED: RESTART BUTTON --- */}
                 <button 
                     onClick={onReset} 
                     className={`px-6 py-3 rounded-xl font-bold transition-colors border ${
                         isDark 
                             ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800" 
-                            : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300"
+                            : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-200"
                     }`}
                 >
                     Restart Analysis
@@ -364,7 +356,7 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
 };
 
 const StatCard = ({ icon: Icon, label, value, color, isDark }: any) => (
-    <div className={`p-4 rounded-2xl border ${isDark ? "bg-zinc-800/50 border-white/5" : "bg-zinc-50 border-zinc-200"}`}>
+    <div className={`p-4 rounded-2xl border ${isDark ? "bg-zinc-800/50 border-white/5" : "bg-white border-zinc-200"}`}>
         <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold uppercase mb-2">
             <Icon size={14} /> {label}
         </div>

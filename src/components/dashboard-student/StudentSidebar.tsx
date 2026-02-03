@@ -29,7 +29,8 @@ export default function StudentSidebar({
 }: SidebarProps) {
   
   const firstName = studentName.split(" ")[0].toUpperCase();
-  const bgClass = isDarkMode ? "bg-[#09090b]/90 border-white/5" : "bg-white/95 border-zinc-200";
+  // UPDATED BG: Dark mode is now a solid tint
+  const bgClass = isDarkMode ? "bg-[#09090b] border-zinc-800" : "bg-white border-zinc-200";
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const textSub = isDarkMode ? "text-zinc-500" : "text-zinc-500";
 
@@ -72,8 +73,8 @@ export default function StudentSidebar({
        </div>
 
        {/* Footer - FIXED: HOVER EFFECTS */}
-       <div className={`pt-6 border-t ${isDarkMode ? "border-white/5" : "border-zinc-200"}`}>
-         <button className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all group ${
+       <div className={`pt-6 border-t ${isDarkMode ? "border-zinc-800" : "border-zinc-200"}`}>
+         <button className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
             isDarkMode 
                 ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10" 
                 : "text-red-500/70 hover:text-red-600 hover:bg-red-50"
@@ -86,7 +87,7 @@ export default function StudentSidebar({
 
   return (
     <>
-        <div className={`hidden md:flex w-72 h-full border-r flex-col backdrop-blur-xl transition-colors duration-300 ${isDarkMode ? "bg-zinc-900/50 border-white/5" : "bg-white/80 border-zinc-200"}`}>
+        <div className={`hidden md:flex w-72 h-full border-r flex-col backdrop-blur-xl transition-colors duration-300 ${bgClass}`}>
             <SidebarContent />
         </div>
         <AnimatePresence>

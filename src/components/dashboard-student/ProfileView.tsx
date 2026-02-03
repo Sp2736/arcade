@@ -14,49 +14,29 @@ interface ProfileViewProps {
 const AVAILABLE_ROLES = ["Frontend Developer", "Backend Developer", "Full Stack Developer", "Data Scientist", "DevOps Engineer"];
 
 export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUnlocked }: ProfileViewProps) {
-  // --- STATE DEFINITIONS ---
-  
-  // 1. Personal Info
+  // ... [State definitions remain same] ...
   const [formData, setFormData] = useState({
     fullName: "Swayam Patel", collegeId: "24DCS088", email: "24dcs088@charusat.edu.in", 
     personalEmail: "swayampatel2736@gmail.com", phone: "+91 98765 43210", bio: "Fullstack Developer | AI/ML Enthusiast",
   });
-
-  // 2. Password Management
   const [passwordData, setPasswordData] = useState({ current: "password123", new: "" });
-  
-  // 3. UI Toggles
-  const [isEditing, setIsEditing] = useState(false); // For Personal Details
+  const [isEditing, setIsEditing] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isEditingPass, setIsEditingPass] = useState(false); // <--- THIS WAS MISSING OR UNDEFINED causing the error
-  
-  // 4. Locks & Timers
+  const [isEditingPass, setIsEditingPass] = useState(false);
   const [lastProfileUpdate, setLastProfileUpdate] = useState<number | null>(null);
   const [lastRoleUpdate, setLastRoleUpdate] = useState<number | null>(null);
   const [lockMessage, setLockMessage] = useState("");
-  
-  // 5. Confirmation Modal
   const [pendingRole, setPendingRole] = useState<string | null>(null);
-
-  // --- HANDLERS ---
 
   const handleEditClick = () => {
     const now = Date.now();
     const twentyFourHours = 24 * 60 * 60 * 1000;
-
-    // Check 24h Lock
     if (lastProfileUpdate && (now - lastProfileUpdate) < twentyFourHours) {
         const hoursLeft = Math.ceil((twentyFourHours - (now - lastProfileUpdate)) / (60 * 60 * 1000));
         setLockMessage(`Profile editing is locked. Try again in ${hoursLeft} hours.`);
         return;
     }
-
-    if (isEditing) {
-        // Saving...
-        setLastProfileUpdate(now);
-        setLockMessage("");
-    }
-    
+    if (isEditing) { setLastProfileUpdate(now); setLockMessage(""); }
     setIsEditing(!isEditing);
   };
 
@@ -64,16 +44,12 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
     const newRole = e.target.value;
     const now = Date.now();
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
-    
-    // Lock Logic
     const canChange = isUnlocked || (!lastRoleUpdate || (now - lastRoleUpdate) > oneWeek);
-
     if (!canChange) {
         const daysLeft = Math.ceil((oneWeek - (now - lastRoleUpdate!)) / (24 * 60 * 60));
         setLockMessage(`Role locked. Complete Mandatory + 2 Advanced skills, or wait ${daysLeft} days.`);
         return;
     }
-
     setPendingRole(newRole);
   };
 
@@ -86,16 +62,16 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
     }
   };
 
-  // Theme Constants
-  const cardBg = isDarkMode ? "bg-zinc-900/50 border-white/10" : "bg-white border-zinc-200 shadow-sm";
+  // UPDATED THEME CONSTANTS: Solid backgrounds
+  const cardBg = isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200 shadow-sm";
   const labelColor = "text-zinc-500";
   const textColor = isDarkMode ? "text-white" : "text-zinc-900";
-  const inputBg = isDarkMode ? "bg-black/40 border-white/10 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900";
+  // Inputs get a darker shade to contrast against the card
+  const inputBg = isDarkMode ? "bg-black border-zinc-800 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900";
 
   return (
     <div className="max-w-4xl mx-auto pb-20 relative">
       
-      {/* CONFIRMATION MODAL */}
       <AnimatePresence>
         {pendingRole && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -113,16 +89,12 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
         )}
       </AnimatePresence>
 
-      {/* HEADER */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className={`text-2xl font-bold ${textColor}`}>My Profile</h2>
           <p className={labelColor}>Manage your personal information and security.</p>
         </div>
-        <button 
-            onClick={handleEditClick} 
-            className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isEditing ? "bg-green-600 text-white hover:bg-green-500" : "bg-blue-600 text-white hover:bg-blue-500"}`}
-        >
+        <button onClick={handleEditClick} className={`px-4 py-2 rounded-lg font-bold text-sm transition-all flex items-center gap-2 ${isEditing ? "bg-green-600 text-white hover:bg-green-500" : "bg-blue-600 text-white hover:bg-blue-500"}`}>
             <Save size={16} /> {isEditing ? "Save Changes" : "Edit Profile"}
         </button>
       </div>
@@ -135,7 +107,7 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
 
       <div className="space-y-6">
         
-        {/* 1. PERSONAL DETAILS CARD */}
+        {/* PERSONAL DETAILS */}
         <div className={`rounded-3xl border p-8 backdrop-blur-md ${cardBg}`}>
             <div className="flex flex-col md:flex-row items-center gap-8 mb-10 border-b border-dashed border-zinc-500/20 pb-10">
                 <div className="relative group">
@@ -151,7 +123,6 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
                     <p className="text-blue-500 font-mono text-sm font-bold">{formData.collegeId}</p>
                 </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Field label="Full Name" value={formData.fullName} icon={User} isDark={isDarkMode} readOnly={true} />
                 <Field label="College Email" value={formData.email} icon={Mail} isDark={isDarkMode} readOnly={true} />
@@ -164,43 +135,25 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
             </div>
         </div>
 
-        {/* 2. SECURITY & ROLE CARD (Visible only in Edit Mode) */}
+        {/* SECURITY & ROLE */}
         {isEditing ? (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Password Section */}
                 <div className={`rounded-3xl border p-6 ${cardBg}`}>
                     <h3 className={`text-lg font-bold mb-4 ${textColor}`}>Security</h3>
                     <div className="space-y-4">
                         <div>
                             <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${labelColor}`}>Current Password</label>
                             <div className="relative">
-                                <input 
-                                    type={showPassword ? "text" : "password"} 
-                                    value={passwordData.current}
-                                    readOnly={!isEditingPass} // Requires isEditingPass state
-                                    onChange={(e) => setPasswordData({...passwordData, current: e.target.value})}
-                                    className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none transition-all ${inputBg} ${!isEditingPass ? "opacity-60" : "focus:ring-2 focus:ring-blue-500"}`} 
-                                />
-                                <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">
-                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                                </button>
+                                <input type={showPassword ? "text" : "password"} value={passwordData.current} readOnly={!isEditingPass} onChange={(e) => setPasswordData({...passwordData, current: e.target.value})} className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none transition-all ${inputBg} ${!isEditingPass ? "opacity-60" : "focus:ring-2 focus:ring-blue-500"}`} />
+                                <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300">{showPassword ? <EyeOff size={16} /> : <Eye size={16} />}</button>
                             </div>
                         </div>
-                        
-                        {/* Change Password Toggle */}
                         {!isEditingPass ? (
                             <button onClick={() => setIsEditingPass(true)} className="text-xs text-blue-500 hover:underline">Change Password</button>
                         ) : (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
                                 <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${labelColor}`}>New Password</label>
-                                <input 
-                                    type="password" 
-                                    placeholder="Enter new password" 
-                                    value={passwordData.new}
-                                    onChange={(e) => setPasswordData({...passwordData, new: e.target.value})}
-                                    className={`w-full rounded-xl py-3 pl-4 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${inputBg}`} 
-                                />
+                                <input type="password" placeholder="Enter new password" value={passwordData.new} onChange={(e) => setPasswordData({...passwordData, new: e.target.value})} className={`w-full rounded-xl py-3 pl-4 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${inputBg}`} />
                                 <div className="flex gap-2 mt-3">
                                     <button onClick={() => setIsEditingPass(false)} className="flex-1 py-2 rounded-lg text-sm font-bold border border-zinc-500/20 text-zinc-500">Cancel</button>
                                     <button className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold">Update</button>
@@ -210,7 +163,6 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
                     </div>
                 </div>
 
-                {/* Target Role Section */}
                 <div className={`rounded-3xl border p-6 ${cardBg}`}>
                     <h3 className={`text-lg font-bold mb-1 ${textColor}`}>Target Role</h3>
                     <p className={`text-xs mb-4 ${labelColor}`}>Change your career path.</p>
@@ -219,41 +171,31 @@ export default function ProfileView({ isDarkMode, targetRole, onRoleChange, isUn
                             <option value="" disabled>Select a Target</option>
                             {AVAILABLE_ROLES.map(role => <option key={role} value={role}>{role}</option>)}
                         </select>
-                        <div className={`flex items-center gap-2 text-xs p-3 rounded-lg ${isDarkMode ? "bg-white/5" : "bg-zinc-100 text-zinc-600"}`}>
+                        <div className={`flex items-center gap-2 text-xs p-3 rounded-lg ${isDarkMode ? "bg-zinc-800" : "bg-zinc-100 text-zinc-600"}`}>
                             <Calendar size={14} /> <span>Locked for 7 days after change.</span>
                         </div>
                     </div>
                 </div>
-
             </motion.div>
         ) : (
-            // LOCKED STATE PLACEHOLDER
-            <div className={`p-8 rounded-3xl border border-dashed text-center ${isDarkMode ? "border-white/10 text-zinc-500" : "border-zinc-300 text-zinc-400"}`}>
+            <div className={`p-8 rounded-3xl border border-dashed text-center ${isDarkMode ? "border-zinc-800 text-zinc-500" : "border-zinc-300 text-zinc-400"}`}>
                 <Lock size={24} className="mx-auto mb-2 opacity-50" />
                 <p className="text-sm">Security and Role settings are hidden. Click "Edit Profile" to manage them.</p>
             </div>
         )}
-
       </div>
     </div>
   );
 }
 
-// Field Helper Component
 const Field = ({ label, value, icon: Icon, isDark, readOnly, onChange }: any) => {
-    const inputBg = isDark ? "bg-black/40 border-white/10 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900";
+    const inputBg = isDark ? "bg-black border-zinc-800 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900";
     return (
         <div>
             <label className="text-xs font-bold uppercase tracking-wider mb-2 block text-zinc-500">{label}</label>
             <div className="relative">
                 <Icon size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
-                <input 
-                    type="text" 
-                    value={value} 
-                    readOnly={readOnly} 
-                    onChange={(e) => onChange && onChange(e.target.value)} 
-                    className={`w-full rounded-xl py-3 pl-11 pr-4 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${inputBg} ${readOnly ? "opacity-70 cursor-not-allowed" : ""}`} 
-                />
+                <input type="text" value={value} readOnly={readOnly} onChange={(e) => onChange && onChange(e.target.value)} className={`w-full rounded-xl py-3 pl-11 pr-4 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${inputBg} ${readOnly ? "opacity-70 cursor-not-allowed" : ""}`} />
             </div>
         </div>
     );

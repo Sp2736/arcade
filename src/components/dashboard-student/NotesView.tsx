@@ -7,7 +7,7 @@ interface NotesViewProps {
   isDark: boolean;
 }
 
-// --- MOCK DATA ---
+// ... [ALL_RESOURCES, SUBJECTS_LIST, SEMESTERS_LIST arrays remain the same] ...
 const ALL_RESOURCES = [
     // SEMESTER 3
     { id: 1, title: "Data Structures: Trees & Graphs", desc: "Complete handwritten notes on AVL, Red-Black trees, and Graph traversals.", subject: "Data Structures", semester: "Semester 3", uploader: "faculty", author: "Prof. Mehta" },
@@ -57,7 +57,6 @@ export default function NotesView({ isDark }: NotesViewProps) {
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // --- FILTER LOGIC ---
   const filteredResources = useMemo(() => {
     return ALL_RESOURCES.filter(item => {
         const matchesSemester = selectedSemester === "All Semesters" || item.semester === selectedSemester;
@@ -68,35 +67,32 @@ export default function NotesView({ isDark }: NotesViewProps) {
     });
   }, [selectedSemester, selectedSubject, searchQuery]);
 
-  // Theme Constants
+  // UPDATED THEME: Solid colors in dark mode
   const textMain = isDark ? "text-white" : "text-zinc-900";
   const textSub = isDark ? "text-zinc-500" : "text-zinc-500";
-  const inputBg = isDark ? "bg-black/40 border-white/10 text-white" : "bg-white border-zinc-300 text-zinc-900";
+  const inputBg = isDark ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-300 text-zinc-900";
+  const filterBg = isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200";
   
-  // Solid background for dropdowns
   const selectClass = `px-3 py-2 rounded-lg border text-sm outline-none cursor-pointer appearance-none transition-colors ${
     isDark 
-      ? "bg-[#09090b] border-white/10 text-zinc-300 hover:border-zinc-700" 
+      ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700" 
       : "bg-white border-zinc-300 text-zinc-700 hover:border-zinc-400"
   }`;
 
   return (
     <div className="h-full flex flex-col space-y-6">
-      
-      {/* --- HEADER & CONTROLS --- */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${textMain}`}>Resource Vault</h2>
           <p className={textSub}>Access verified study materials across all semesters.</p>
         </div>
         
-        {/* Tab Switcher */}
-        <div className={`flex p-1 rounded-lg border ${isDark ? "bg-zinc-800/50 border-white/5" : "bg-zinc-100 border-zinc-200"}`}>
+        <div className={`flex p-1 rounded-lg border ${isDark ? "bg-zinc-800 border-zinc-700" : "bg-zinc-100 border-zinc-200"}`}>
             <button 
                 onClick={() => setActiveTab("browse")}
                 className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${
                     activeTab === "browse" 
-                        ? (isDark ? "bg-zinc-800 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
+                        ? (isDark ? "bg-zinc-900 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
                         : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200")
                 }`}
             >
@@ -106,7 +102,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
                 onClick={() => setActiveTab("uploads")}
                 className={`px-4 py-1.5 text-sm font-bold rounded-md transition-all ${
                     activeTab === "uploads" 
-                        ? (isDark ? "bg-zinc-800 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
+                        ? (isDark ? "bg-zinc-900 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") 
                         : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200")
                 }`}
             >
@@ -115,13 +111,9 @@ export default function NotesView({ isDark }: NotesViewProps) {
         </div>
       </div>
 
-      {/* --- CONTENT AREA --- */}
       {activeTab === "browse" ? (
         <>
-            {/* FILTERS TOOLBAR */}
-            <div className={`p-4 rounded-xl border flex flex-wrap gap-4 items-center ${isDark ? "bg-zinc-900/40 border-white/5" : "bg-zinc-50 border-zinc-200"}`}>
-                
-                {/* Search */}
+            <div className={`p-4 rounded-xl border flex flex-wrap gap-4 items-center ${filterBg}`}>
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border w-full md:w-64 ${inputBg}`}>
                     <Search size={16} className="text-zinc-500" />
                     <input 
@@ -133,7 +125,6 @@ export default function NotesView({ isDark }: NotesViewProps) {
                     />
                 </div>
                 
-                {/* Semester Dropdown (1-8) */}
                 <div className="relative">
                     <select 
                         value={selectedSemester}
@@ -144,7 +135,6 @@ export default function NotesView({ isDark }: NotesViewProps) {
                     </select>
                 </div>
                 
-                {/* Subject Dropdown */}
                 <div className="relative">
                     <select 
                         value={selectedSubject}
@@ -155,7 +145,6 @@ export default function NotesView({ isDark }: NotesViewProps) {
                     </select>
                 </div>
 
-                {/* Filter Reset (Hidden if no filter) */}
                 {(selectedSemester !== "All Semesters" || selectedSubject !== "All Subjects") && (
                     <button 
                         onClick={() => { setSelectedSemester("All Semesters"); setSelectedSubject("All Subjects"); }}
@@ -171,12 +160,10 @@ export default function NotesView({ isDark }: NotesViewProps) {
                 </button>
             </div>
 
-            {/* RESULTS COUNT */}
             <div className={`text-xs font-bold uppercase tracking-wider ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
                 Showing {filteredResources.length} Resources
             </div>
 
-            {/* NOTES GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto custom-scrollbar pr-2 pb-10">
                 {filteredResources.length > 0 ? (
                     filteredResources.map((res) => (
@@ -202,8 +189,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
             </div>
         </>
       ) : (
-        /* --- MY UPLOADS TAB (Empty State Demo) --- */
-        <div className={`flex flex-col items-center justify-center h-64 rounded-2xl border border-dashed ${isDark ? "border-white/10 bg-zinc-900/20" : "border-zinc-300 bg-zinc-50"}`}>
+        <div className={`flex flex-col items-center justify-center h-64 rounded-2xl border border-dashed ${isDark ? "border-zinc-800 bg-zinc-900/50" : "border-zinc-300 bg-zinc-50"}`}>
             <div className={`w-16 h-16 mb-4 rounded-full flex items-center justify-center ${isDark ? "bg-zinc-800 text-zinc-600" : "bg-zinc-200 text-zinc-400"}`}>
                 <UploadCloud size={32} />
             </div>
@@ -222,7 +208,6 @@ export default function NotesView({ isDark }: NotesViewProps) {
 // --- NOTE CARD COMPONENT ---
 const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, studentName, verifierName, isDark }: any) => {
     
-    // Stamp Logic
     const isFaculty = uploader === "faculty";
     const stampColor = isFaculty 
         ? "bg-blue-600 text-white border-blue-500" 
@@ -231,10 +216,12 @@ const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, stude
     const StampIcon = isFaculty ? ShieldCheck : User;
     const stampLabel = isFaculty ? "FACULTY" : "STUDENT";
 
+    // UPDATED CARD BG: Solid color for contrast
+    const cardBg = isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/30" : "bg-white border-zinc-200 shadow-sm hover:shadow-md";
+
     return (
-        <div className={`group p-5 rounded-2xl border transition-all hover:-translate-y-1 ${isDark ? "bg-zinc-900/40 border-white/5 hover:border-blue-500/30" : "bg-white border-zinc-200 shadow-sm hover:shadow-md"}`}>
+        <div className={`group p-5 rounded-2xl border transition-all hover:-translate-y-1 ${cardBg}`}>
             
-            {/* Header: Stamp & Title */}
             <div className="flex justify-between items-start mb-3">
                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border shadow-sm ${stampColor}`}>
                     <StampIcon size={12} strokeWidth={3} />
@@ -253,8 +240,7 @@ const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, stude
                 {desc}
             </p>
 
-            {/* Footer: Details & Actions */}
-            <div className={`pt-4 border-t ${isDark ? "border-white/5" : "border-zinc-100"}`}>
+            <div className={`pt-4 border-t ${isDark ? "border-zinc-800" : "border-zinc-100"}`}>
                 
                 <div className="flex justify-between items-end mb-3">
                     <div className="flex flex-col">
@@ -281,9 +267,8 @@ const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, stude
                     )}
                 </div>
 
-                {/* Actions */}
                 <div className="flex gap-2 mt-2">
-                    <button className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors ${isDark ? "bg-white/5 hover:bg-white/10 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"}`}>
+                    <button className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors ${isDark ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"}`}>
                         <Eye size={14} /> View
                     </button>
                     <button className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}>
