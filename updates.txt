@@ -1,0 +1,2 @@
+* students can view faculty profile and know their id, location, phone, email details.
+* faculty feature: viewing student profiles to see their techstack, skill progress etc.
