@@ -77,6 +77,20 @@ export default function StudentDashboard() {
     return () => timers.forEach((t) => clearTimeout(t));
   }, []);
 
+// Add a simulation effect for notification
+useEffect(() => {
+    // Simulate notification coming in after 5 seconds
+    const timer = setTimeout(() => {
+        addNotification({
+            title: "Material Approved",
+            desc: "Prof. J. Doe verified your 'Data Structures' notes.",
+            time: "Now",
+            type: "success"
+        });
+    }, 5000);
+    return () => clearTimeout(timer);
+}, []);
+
   const addNotification = (notif: Omit<Notification, "id">) => {
     setNotifications(prev => [{ id: Date.now() + Math.random(), ...notif }, ...prev]);
   };

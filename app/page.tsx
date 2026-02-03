@@ -11,6 +11,6 @@ import FacultyDashboard from "@/src/components/dashboard-faculty/FacultyDashboar
 import StudentDashboard from "@/src/components/dashboard-student/StudentDashboard";
 
 export default function Page() {
-  return <StudentDashboard />;
-  // return <FacultyDashboard/>;
+  // return <StudentDashboard />;
+  return <FacultyDashboard/>;
 }
