@@ -71,9 +71,13 @@ export default function StudentSidebar({
          })}
        </div>
 
-       {/* Footer - Removed Settings */}
+       {/* Footer - FIXED: HOVER EFFECTS */}
        <div className={`pt-6 border-t ${isDarkMode ? "border-white/5" : "border-zinc-200"}`}>
-         <button className="w-full flex items-center gap-4 p-3 text-red-400/70 hover:text-red-500 transition-all">
+         <button className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all group ${
+            isDarkMode 
+                ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10" 
+                : "text-red-500/70 hover:text-red-600 hover:bg-red-50"
+         }`}>
            <LogOut size={20} /> <span className="text-sm">Disconnect</span>
          </button>
        </div>

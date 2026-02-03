@@ -11,7 +11,7 @@ interface SkillNavigatorProps {
   isDark: boolean;
 }
 
-// --- 1. EXPANDED SURVEY DATA ---
+// ... [SURVEY_QUESTIONS, TECH_CATEGORIES, CAREER_RESULTS data arrays remain unchanged] ...
 const SURVEY_QUESTIONS = [
   // FRONTEND
   { id: 1, text: "I care deeply about pixel-perfect designs and UI aesthetics.", role: "Frontend Developer" },
@@ -56,7 +56,6 @@ const TECH_CATEGORIES = {
   "DevOps": ["Docker", "Kubernetes", "AWS", "Linux", "Git"]
 };
 
-// --- UPDATED CAREER RESULTS (With Extra Fields) ---
 const CAREER_RESULTS: any = {
   "Frontend Developer": {
     desc: "The Architect of User Experience. You blend logic with aesthetics to build the face of the web.",
@@ -109,9 +108,8 @@ export default function SkillNavigator({ isDark }: SkillNavigatorProps) {
   const [step, setStep] = useState<"intro" | "tech" | "survey" | "processing" | "results">("intro");
   const [selectedSkills, setSelectedSkills] = useState<Record<string, number>>({});
   const [surveyScores, setSurveyScores] = useState<Record<string, number>>({});
-  const [topRoles, setTopRoles] = useState<string[]>([]); // Store Top 3 Roles
+  const [topRoles, setTopRoles] = useState<string[]>([]);
 
-  // --- LOGIC ---
   const handleSkillToggle = (skill: string) => {
     setSelectedSkills(prev => {
       const current = prev[skill] || 0;
@@ -129,23 +127,14 @@ export default function SkillNavigator({ isDark }: SkillNavigatorProps) {
 
   const calculateResult = () => {
     setStep("processing");
-    
-    // 1. Sort roles by survey score
     const scores = Object.entries(surveyScores).sort((a, b) => b[1] - a[1]);
-    
-    // 2. Extract role names
     let distinctRoles = scores.map(s => s[0]);
     const allRoles = Object.keys(CAREER_RESULTS);
-
-    // 3. Fill with remaining distinct roles if user didn't pick enough
     allRoles.forEach(r => {
         if (!distinctRoles.includes(r)) distinctRoles.push(r);
     });
-
-    // 4. Take top 3
     const top3 = distinctRoles.slice(0, 3);
     setTopRoles(top3);
-
     setTimeout(() => {
         setStep("results");
     }, 2500);
@@ -155,8 +144,6 @@ export default function SkillNavigator({ isDark }: SkillNavigatorProps) {
 
   return (
     <div className={`h-full flex flex-col relative overflow-hidden rounded-3xl border transition-all duration-500 ${cardBg}`}>
-      
-      {/* HEADER PROGRESS */}
       {step !== "intro" && step !== "results" && (
         <div className="absolute top-0 left-0 right-0 h-1 bg-zinc-800 z-20">
             <motion.div 
@@ -167,8 +154,7 @@ export default function SkillNavigator({ isDark }: SkillNavigatorProps) {
         </div>
       )}
 
-      {/* CONTENT AREA */}
-      <div className="flex-1 flex flex-col p-6 md:p-10 relative z-10 min-h-0"> {/* min-h-0 ensures flex child scrolls properly */}
+      <div className="flex-1 flex flex-col p-6 md:p-10 relative z-10 min-h-0">
         <AnimatePresence mode="wait">
             {step === "intro" && <IntroView key="intro" isDark={isDark} onStart={() => setStep("tech")} onSkip={calculateResult} />}
             {step === "tech" && <TechStackView key="tech" isDark={isDark} selectedSkills={selectedSkills} onToggle={handleSkillToggle} onNext={() => setStep("survey")} />}
@@ -280,25 +266,22 @@ const ProcessingView = ({ isDark }: any) => (
     </motion.div>
 );
 
-// --- RESULTS VIEW (UPDATED) ---
 const ResultsView = ({ isDark, roles, onReset }: any) => {
     const mainRole = roles[0];
     const data = CAREER_RESULTS[mainRole] || CAREER_RESULTS["Full Stack Developer"];
-    const secondaryRoles = roles.slice(1, 3); // Top 2 alternatives
+    const secondaryRoles = roles.slice(1, 3);
 
     return (
         <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
-            className="h-full flex flex-col overflow-y-auto custom-scrollbar pr-2 pb-24" // Extra padding for scroll
+            className="h-full flex flex-col overflow-y-auto custom-scrollbar pr-2 pb-24"
         >
-            {/* --- MAIN HERO (TOP 1) --- */}
             <div className="text-center mb-8">
                 <div className="inline-block px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-black tracking-widest uppercase mb-4">Top Match Identified</div>
                 <h2 className={`text-4xl md:text-6xl font-black uppercase leading-none mb-4 ${isDark ? "text-white" : "text-zinc-900"}`}>{mainRole}</h2>
                 <p className={`max-w-xl mx-auto text-sm ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>{data.desc}</p>
             </div>
 
-            {/* MAIN STATS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <StatCard icon={DollarSign} label="Avg. Intern Stipend" value={data.salary} color="text-green-500" isDark={isDark} />
                 <StatCard icon={TrendingUp} label="Market Demand" value={data.demand} color="text-orange-500" isDark={isDark} />
@@ -306,7 +289,6 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
                 <StatCard icon={Building} label="Top Recruiters" value={data.recruiters} color="text-purple-500" isDark={isDark} />
             </div>
 
-            {/* MAIN GAPS & LOADOUT */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
                 <div className={`p-6 rounded-2xl border ${isDark ? "bg-zinc-800/30 border-white/5" : "bg-white border-zinc-200"}`}>
                     <h4 className={`text-sm font-bold mb-4 flex items-center gap-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
@@ -335,7 +317,6 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
                 </div>
             </div>
 
-            {/* --- ALTERNATIVE PATHS (TOP 2 & 3) --- */}
             <div className="mb-8">
                 <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${isDark ? "text-white" : "text-zinc-900"}`}>
                     <RefreshCw size={18} className="text-zinc-500" /> Other Viable Paths
@@ -363,7 +344,15 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
             </div>
 
             <div className="mt-auto flex gap-4">
-                <button onClick={onReset} className="px-6 py-3 rounded-xl font-bold text-zinc-500 hover:text-zinc-300 transition-colors bg-zinc-800/50 border border-zinc-700">
+                {/* --- FIXED: RESTART BUTTON STYLING --- */}
+                <button 
+                    onClick={onReset} 
+                    className={`px-6 py-3 rounded-xl font-bold transition-colors border ${
+                        isDark 
+                            ? "bg-zinc-800/50 border-zinc-700 text-zinc-400 hover:text-white hover:bg-zinc-800" 
+                            : "bg-white border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300"
+                    }`}
+                >
                     Restart Analysis
                 </button>
                 <button className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20">
@@ -374,7 +363,6 @@ const ResultsView = ({ isDark, roles, onReset }: any) => {
     );
 };
 
-// Helper for Stats
 const StatCard = ({ icon: Icon, label, value, color, isDark }: any) => (
     <div className={`p-4 rounded-2xl border ${isDark ? "bg-zinc-800/50 border-white/5" : "bg-zinc-50 border-zinc-200"}`}>
         <div className="flex items-center gap-2 text-zinc-500 text-xs font-bold uppercase mb-2">
