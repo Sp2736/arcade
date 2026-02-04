@@ -188,4 +188,4 @@ export default function FacultyDashboard() {
       </div>
     </div>
   );
-}
+} {/*end code*/}
