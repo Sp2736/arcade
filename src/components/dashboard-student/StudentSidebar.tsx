@@ -3,7 +3,8 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  LayoutDashboard, FileText, Map, Cpu, Library, LogOut, X 
+  LayoutDashboard, FileText, Map, Cpu, Library, LogOut, X, 
+  Users
 } from "lucide-react";
 
 interface SidebarProps {
@@ -15,15 +16,20 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
+
+
+// ... inside the file ...
+
+// 2. Add the 'alumni' object to your MENU_ITEMS
 const MENU_ITEMS = [
   { id: "overview", label: "Command Center", icon: LayoutDashboard },
   { id: "notes", label: "Resource Vault", icon: FileText },      
   { id: "roadmap", label: "Career Roadmaps", icon: Map },        
   { id: "skills", label: "Skill Navigator", icon: Cpu },         
+  { id: "alumni", label: "Expert Network", icon: Users }, // The new option
   { id: "resumes", label: "Resume Archives", icon: FileText },   
   { id: "resources", label: "Practice Zone", icon: Library },    
 ];
-
 export default function StudentSidebar({ 
   activeView, onNavigate, isDarkMode, studentName, mobileOpen, onMobileClose 
 }: SidebarProps) {

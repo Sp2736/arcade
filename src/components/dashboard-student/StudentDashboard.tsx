@@ -12,6 +12,8 @@ import RoadmapView from "./RoadmapView";
 import SkillNavigator from "./SkillNavigator";
 import ResumeResourcesView from "./ResumeResourcesView";
 import DashboardCursor from "./DashboardCursor"; 
+// Import the new component
+import AlumniNetwork from "./AlumniNetwork";
 
 export const ROADMAP_DATA: any = {
     "Frontend Developer": {
@@ -77,9 +79,7 @@ export default function StudentDashboard() {
     return () => timers.forEach((t) => clearTimeout(t));
   }, []);
 
-// Add a simulation effect for notification
 useEffect(() => {
-    // Simulate notification coming in after 5 seconds
     const timer = setTimeout(() => {
         addNotification({
             title: "Material Approved",
@@ -101,7 +101,6 @@ useEffect(() => {
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const borderMain = isDarkMode ? "border-zinc-800" : "border-zinc-200";
   
-  // UPDATED BG CONSTANTS: Solid blacks/grays for high contrast
   const bgMain = isDarkMode ? "bg-[#050505]" : "bg-[#f8fafc]"; 
   const panelBg = isDarkMode ? "bg-[#09090b] border-zinc-800" : "bg-white border-zinc-200"; 
 
@@ -227,6 +226,8 @@ useEffect(() => {
                     {currentView === "skills" && <SkillNavigator isDark={isDarkMode} />}
                     {currentView === "resumes" && <ResumeResourcesView isDark={isDarkMode} initialTab="resumes" />}
                     {currentView === "resources" && <ResumeResourcesView isDark={isDarkMode} initialTab="resources" />}
+                    {/* NEW: Alumni Network View */}
+                    {currentView === "alumni" && <AlumniNetwork isDark={isDarkMode} />}
                 </motion.div>
             </AnimatePresence>
         </div>
