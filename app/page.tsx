@@ -7,6 +7,8 @@
 //     </main>
 //   );
 // }
+
+
 import FacultyDashboard from "@/src/components/dashboard-faculty/FacultyDashboard";
 import StudentDashboard from "@/src/components/dashboard-student/StudentDashboard";
 
