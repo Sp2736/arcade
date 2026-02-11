@@ -1,14 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { UploadCloud, FileText, FileBadge, Clock, Briefcase, GraduationCap } from "lucide-react";
+import { Link as LinkIcon, FileText, FileBadge, Clock, Briefcase, GraduationCap, AlertCircle } from "lucide-react";
 
 interface FacultyUploadsProps {
   isDark: boolean;
   onSimulateHODResponse: (approved: boolean) => void;
 }
 
-// Schema Constraints
 const EXPEREINCE_LEVELS = ["intern", "fresher", "experienced"];
 const DOMAINS = ["Software Engineering", "Data Science", "Web Development", "App Development", "DevOps", "Cybersecurity"];
 
@@ -20,27 +19,28 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
   const [subject, setSubject] = useState("Operating Systems");
   const [domain, setDomain] = useState(DOMAINS[0]);
   const [expLevel, setExpLevel] = useState(EXPEREINCE_LEVELS[0]);
+  const [driveLink, setDriveLink] = useState(""); // NEW: Drive Link State
 
   const [uploads, setUploads] = useState([
-    { id: 1, title: "Data Structures Notes", type: "Material", date: "Oct 20, 2025", status: "Published" },
-    { id: 2, title: "My Updated Resume", type: "Resume", date: "Oct 25, 2025", status: "Pending HOD" },
+    { id: 1, title: "Data Structures Notes", type: "Material", date: "Oct 20, 2025", status: "Published", link: "#" },
+    { id: 2, title: "My Updated Resume", type: "Resume", date: "Oct 25, 2025", status: "Pending HOD", link: "#" },
   ]);
 
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would send 'domain' and 'expLevel' to the backend here
     const newUpload = { 
         id: Date.now(), 
         title: title || (activeTab === "resume" ? "Faculty Resume" : "New Material"), 
         type: activeTab === "resume" ? "Resume" : "Material", 
         date: "Just now", 
         status: activeTab === "resume" ? "Pending HOD" : "Published",
-        // Extra metadata for display if needed
-        details: activeTab === "resume" ? `${domain} • ${expLevel}` : subject
+        details: activeTab === "resume" ? `${domain} • ${expLevel}` : subject,
+        link: driveLink
     };
     
     setUploads([newUpload, ...uploads]);
-    setTitle(""); // Reset form
+    setTitle(""); 
+    setDriveLink(""); // Reset
   };
 
   const cardClass = `p-4 md:p-6 rounded-md border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`;
@@ -48,7 +48,7 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
   const labelClass = `block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-400" : "text-slate-500"}`;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-24">
       <div className="flex justify-between items-center">
         <div>
             <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>My Uploads</h2>
@@ -67,7 +67,6 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
             
             <form onSubmit={handleUpload} className="space-y-4">
                 
-                {/* Common Field: Title (Mapped to 'reference' in RESUME schema or 'title' in NOTES schema) */}
                 <div>
                     <label className={labelClass}>Title / Reference</label>
                     <input 
@@ -80,15 +79,10 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
                     />
                 </div>
 
-                {/* MATERIAL SPECIFIC: Subject */}
                 {activeTab === "material" && (
                     <div>
                         <label className={labelClass}>Subject</label>
-                        <select 
-                            value={subject} 
-                            onChange={(e) => setSubject(e.target.value)} 
-                            className={inputClass}
-                        >
+                        <select value={subject} onChange={(e) => setSubject(e.target.value)} className={inputClass}>
                             <option>Operating Systems</option>
                             <option>Computer Networks</option>
                             <option>Data Structures</option>
@@ -96,18 +90,13 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
                     </div>
                 )}
 
-                {/* RESUME SPECIFIC: Domain & Experience Level (REQUIRED BY SCHEMA) */}
                 {activeTab === "resume" && (
                     <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                             <label className={labelClass}>Domain</label>
                             <div className="relative">
                                 <Briefcase className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                                <select 
-                                    value={domain}
-                                    onChange={(e) => setDomain(e.target.value)}
-                                    className={`${inputClass} pl-9`}
-                                >
+                                <select value={domain} onChange={(e) => setDomain(e.target.value)} className={`${inputClass} pl-9`}>
                                     {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
                                 </select>
                             </div>
@@ -116,11 +105,7 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
                             <label className={labelClass}>Experience Level</label>
                             <div className="relative">
                                 <GraduationCap className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                                <select 
-                                    value={expLevel}
-                                    onChange={(e) => setExpLevel(e.target.value)}
-                                    className={`${inputClass} pl-9 capitalize`}
-                                >
+                                <select value={expLevel} onChange={(e) => setExpLevel(e.target.value)} className={`${inputClass} pl-9 capitalize`}>
                                     {EXPEREINCE_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                                 </select>
                             </div>
@@ -128,16 +113,27 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
                     </div>
                 )}
 
-                {/* File Upload */}
+                {/* NEW: URL Input instead of File Dropzone */}
                 <div>
-                    <label className={labelClass}>File Attachment</label>
-                    <div className={`border-2 border-dashed rounded-md p-6 text-center cursor-pointer transition-colors ${isDark ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-200 hover:bg-slate-50"}`}>
-                        <UploadCloud className="mx-auto mb-2 opacity-50" size={24} />
-                        <span className="text-xs font-medium opacity-70">Click to upload PDF/DOCX</span>
+                    <label className={labelClass}>Resource Link</label>
+                    <div className="relative">
+                        <LinkIcon className="absolute left-3 top-2.5 text-blue-500" size={16} />
+                        <input 
+                            type="url" 
+                            value={driveLink}
+                            onChange={(e) => setDriveLink(e.target.value)}
+                            placeholder="Paste Google Drive link..." 
+                            className={`${inputClass} pl-9`} 
+                            required 
+                        />
+                    </div>
+                    {/* Permission Warning */}
+                    <div className="flex items-start gap-2 mt-2 text-[10px] text-blue-500 bg-blue-500/10 p-2 rounded border border-blue-500/20">
+                        <AlertCircle size={12} className="shrink-0 mt-0.5" />
+                        <p>Ensure the link access is set to <strong>"Anyone with the link can view"</strong> so students can access it.</p>
                     </div>
                 </div>
 
-                {/* Resume Warning */}
                 {activeTab === "resume" && (
                     <div className={`text-xs p-3 rounded border ${isDark ? "bg-amber-900/10 border-amber-900/30 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
                         <div className="flex gap-2 font-bold mb-1"><Clock size={14} /> Approval Required</div>
@@ -145,8 +141,8 @@ export default function FacultyUploads({ isDark, onSimulateHODResponse }: Facult
                     </div>
                 )}
 
-                <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-sm transition-colors">
-                    Upload {activeTab === "resume" ? "Resume" : "Material"}
+                <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-sm transition-colors mt-2">
+                    Submit {activeTab === "resume" ? "Resume" : "Material"} Link
                 </button>
             </form>
         </div>

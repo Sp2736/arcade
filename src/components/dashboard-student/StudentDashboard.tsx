@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, Sun, Moon, X, Info, CheckCircle, Menu } from "lucide-react";
+import { Bell, Sun, Moon, X, Info, CheckCircle, Menu, AlertTriangle } from "lucide-react";
 
 import StudentSidebar from "./StudentSidebar";
 import ProfileView from "./ProfileView";
@@ -79,17 +79,17 @@ export default function StudentDashboard() {
     return () => timers.forEach((t) => clearTimeout(t));
   }, []);
 
-useEffect(() => {
-    const timer = setTimeout(() => {
-        addNotification({
-            title: "Material Approved",
-            desc: "Prof. J. Doe verified your 'Data Structures' notes.",
-            time: "Now",
-            type: "success"
-        });
-    }, 5000);
-    return () => clearTimeout(timer);
-}, []);
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          addNotification({
+              title: "Material Approved",
+              desc: "Prof. J. Doe verified your 'Data Structures' notes.",
+              time: "Now",
+              type: "success"
+          });
+      }, 5000);
+      return () => clearTimeout(timer);
+  }, []);
 
   const addNotification = (notif: Omit<Notification, "id">) => {
     setNotifications(prev => [{ id: Date.now() + Math.random(), ...notif }, ...prev]);
@@ -132,8 +132,12 @@ useEffect(() => {
 
       <div className="flex-1 flex flex-col h-full relative z-20 overflow-hidden">
         
-        <header className={`h-16 md:h-20 border-b backdrop-blur-md flex items-center justify-between px-4 md:px-8 relative z-50 transition-colors duration-300 ${borderMain} ${isDarkMode ? "bg-[#050505]/80" : "bg-white/50"}`}>
+        {/* FIXED HEADER: Removed backdrop-blur-md from the main container class */}
+        <header className={`h-16 md:h-20 border-b flex items-center justify-between px-4 md:px-8 relative z-50 transition-colors duration-300 ${borderMain}`}>
             
+            {/* The blur is now placed on an absolute background layer so it doesn't trap fixed elements! */}
+            <div className={`absolute inset-0 -z-10 backdrop-blur-md transition-colors duration-300 ${isDarkMode ? "bg-[#050505]/80" : "bg-white/80"}`} />
+
             <div className="flex items-center gap-3 md:gap-4">
                 <button onClick={() => setMobileMenuOpen(true)} className="md:hidden p-2 -ml-2 text-zinc-500 hover:text-zinc-800 transition-colors"><Menu size={24} /></button>
                 <div>
@@ -162,40 +166,59 @@ useEffect(() => {
                     
                     <AnimatePresence>
                         {showNotifPanel && (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 10, scale: 0.95 }} 
-                                animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                exit={{ opacity: 0, y: 10, scale: 0.95 }} 
-                                className={`absolute right-0 top-14 w-80 md:w-96 rounded-2xl border shadow-2xl overflow-hidden z-[100] ${panelBg}`}
-                            >
-                                <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-100 bg-white"}`}>
-                                    <h3 className={`font-bold text-sm ${textMain}`}>Notifications</h3>
-                                    <div className="flex gap-3 items-center">
-                                        <button onClick={() => setNotifications([])} className="text-[10px] text-blue-500 hover:underline">Clear</button>
-                                        <button onClick={() => setShowNotifPanel(false)} className={`p-1 rounded transition-colors ${isDarkMode ? "hover:bg-zinc-800 text-zinc-400" : "hover:bg-zinc-200 text-zinc-600"}`}><X size={14}/></button>
-                                    </div>
-                                </div>
+                            <>
+                                {/* Mobile Backdrop Overlay - Will now cover the entire screen properly */}
+                                <motion.div 
+                                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                    className="md:hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm"
+                                    onClick={() => setShowNotifPanel(false)}
+                                />
 
-                                <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                                    {notifications.length === 0 ? (
-                                        <div className={`p-8 text-center text-xs py-12 ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>No new notifications</div>
-                                    ) : (
-                                        notifications.map(n => (
-                                            <div key={n.id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-zinc-800 hover:bg-zinc-800/50" : "border-zinc-100 hover:bg-zinc-50"}`}>
-                                                <button onClick={() => removeNotification(n.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
-                                                <div className="flex gap-3">
-                                                    <div className={`mt-0.5 ${n.type === "success" ? "text-green-500" : "text-blue-500"}`}>{n.type === "success" ? <CheckCircle size={16} /> : <Info size={16} />}</div>
-                                                    <div>
-                                                        <h4 className={`text-sm font-bold leading-none mb-1 ${textMain}`}>{n.title}</h4>
-                                                        <p className={`text-xs leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.desc}</p>
-                                                        <span className="text-[10px] opacity-40 mt-1 block">{n.time}</span>
+                                {/* Notification Panel */}
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                    animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }} 
+                                    className={`
+                                        fixed md:absolute 
+                                        top-20 md:top-14 
+                                        left-4 right-4 md:left-auto md:right-0 
+                                        w-auto md:w-96 
+                                        rounded-2xl border shadow-2xl overflow-hidden z-[100] 
+                                        ${panelBg}
+                                    `}
+                                >
+                                    <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-100 bg-white"}`}>
+                                        <h3 className={`font-bold text-sm ${textMain}`}>Notifications</h3>
+                                        <div className="flex gap-3 items-center">
+                                            <button onClick={() => setNotifications([])} className="text-[10px] text-blue-500 hover:underline">Clear</button>
+                                            <button onClick={() => setShowNotifPanel(false)} className={`p-1 rounded transition-colors ${isDarkMode ? "hover:bg-zinc-800 text-zinc-400" : "hover:bg-zinc-200 text-zinc-600"}`}><X size={14}/></button>
+                                        </div>
+                                    </div>
+
+                                    <div className="max-h-[60vh] md:max-h-[400px] overflow-y-auto custom-scrollbar">
+                                        {notifications.length === 0 ? (
+                                            <div className={`p-8 text-center text-xs py-12 ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>No new notifications</div>
+                                        ) : (
+                                            notifications.map(n => (
+                                                <div key={n.id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-zinc-800 hover:bg-zinc-800/50" : "border-zinc-100 hover:bg-zinc-50"}`}>
+                                                    <button onClick={() => removeNotification(n.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
+                                                    <div className="flex gap-3">
+                                                        <div className={`mt-0.5 shrink-0 ${n.type === "success" ? "text-green-500" : n.type === "alert" ? "text-amber-500" : "text-blue-500"}`}>
+                                                            {n.type === "success" ? <CheckCircle size={16} /> : n.type === "alert" ? <AlertTriangle size={16} /> : <Info size={16} />}
+                                                        </div>
+                                                        <div className="min-w-0 pr-4">
+                                                            <h4 className={`text-sm font-bold leading-tight mb-1 truncate ${textMain}`}>{n.title}</h4>
+                                                            <p className={`text-xs leading-relaxed break-words ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.desc}</p>
+                                                            <span className="text-[10px] opacity-40 mt-1.5 block">{n.time}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </motion.div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            </>
                         )}
                     </AnimatePresence>
                 </div>
