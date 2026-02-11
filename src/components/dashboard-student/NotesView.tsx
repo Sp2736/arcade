@@ -7,18 +7,18 @@ interface NotesViewProps {
   isDark: boolean;
 }
 
-// ... [ALL_RESOURCES, SUBJECTS_LIST, SEMESTERS_LIST arrays remain unchanged] ...
+// Added 'views' and 'downloads' mock data to the resources
 const ALL_RESOURCES = [
-    { id: 1, title: "Data Structures: Trees & Graphs", desc: "Complete handwritten notes on AVL, Red-Black trees, and Graph traversals.", subject: "Data Structures", semester: "Semester 3", uploader: "faculty", author: "Prof. Mehta" },
-    { id: 2, title: "DBMS: Normalization Guide", desc: "1NF to BCNF explained with real-world examples.", subject: "DBMS", semester: "Semester 3", uploader: "student", author: "Rohan Das", verifier: "Prof. Varma" },
-    { id: 3, title: "OS: Process Scheduling Algorithms", desc: "FCFS, SJF, and Round Robin solved problems.", subject: "Operating Systems", semester: "Semester 4", uploader: "student", author: "Priya Shah", verifier: "Dr. A. Patel" },
-    { id: 4, title: "Computer Networks: TCP/IP Model", desc: "Layer-by-layer breakdown of the protocol suite.", subject: "Computer Networks", semester: "Semester 4", uploader: "faculty", author: "Dr. R. Iyer" },
-    { id: 5, title: "DAA: Dynamic Programming", desc: "Knapsack, LCS, and Matrix Chain Multiplication master sheet.", subject: "Algorithms", semester: "Semester 5", uploader: "student", author: "Amit Kumar", verifier: "Prof. Singh" },
-    { id: 6, title: "Web Dev: React Hooks Cheatsheet", desc: "Quick reference for useState, useEffect, and custom hooks.", subject: "Web Technologies", semester: "Semester 5", uploader: "student", author: "Swayam Patel", verifier: "Prof. Zala" },
-    { id: 7, title: "AI: Search Algorithms", desc: "BFS, DFS, A*, and Heuristic search methods.", subject: "Artificial Intelligence", semester: "Semester 6", uploader: "faculty", author: "Dr. K. Nair" },
-    { id: 8, title: "Software Eng: Agile vs Waterfall", desc: "Comparative analysis for end-term exams.", subject: "Software Engineering", semester: "Semester 6", uploader: "student", author: "Rahul V.", verifier: "Prof. T. Shah" },
-    { id: 9, title: "Information Security: Cryptography", desc: "RSA, DES, and AES encryption logic explained.", subject: "Info Security", semester: "Semester 7", uploader: "faculty", author: "Prof. G. Bhatt" },
-    { id: 10, title: "Cloud Computing: AWS Essentials", desc: "EC2, S3, and Lambda functions basics.", subject: "Cloud Computing", semester: "Semester 8", uploader: "student", author: "Neha Gupta", verifier: "Dr. P. Joshi" },
+    { id: 1, title: "Data Structures: Trees & Graphs", desc: "Complete handwritten notes on AVL, Red-Black trees, and Graph traversals.", subject: "Data Structures", semester: "Semester 3", uploader: "faculty", author: "Prof. Mehta", views: 1240, downloads: 432 },
+    { id: 2, title: "DBMS: Normalization Guide", desc: "1NF to BCNF explained with real-world examples.", subject: "DBMS", semester: "Semester 3", uploader: "student", author: "Rohan Das", verifier: "Prof. Varma", views: 890, downloads: 215 },
+    { id: 3, title: "OS: Process Scheduling Algorithms", desc: "FCFS, SJF, and Round Robin solved problems.", subject: "Operating Systems", semester: "Semester 4", uploader: "student", author: "Priya Shah", verifier: "Dr. A. Patel", views: 2100, downloads: 840 },
+    { id: 4, title: "Computer Networks: TCP/IP Model", desc: "Layer-by-layer breakdown of the protocol suite.", subject: "Computer Networks", semester: "Semester 4", uploader: "faculty", author: "Dr. R. Iyer", views: 1560, downloads: 620 },
+    { id: 5, title: "DAA: Dynamic Programming", desc: "Knapsack, LCS, and Matrix Chain Multiplication master sheet.", subject: "Algorithms", semester: "Semester 5", uploader: "student", author: "Amit Kumar", verifier: "Prof. Singh", views: 945, downloads: 310 },
+    { id: 6, title: "Web Dev: React Hooks Cheatsheet", desc: "Quick reference for useState, useEffect, and custom hooks.", subject: "Web Technologies", semester: "Semester 5", uploader: "student", author: "Swayam Patel", verifier: "Prof. Zala", views: 3200, downloads: 1150 },
+    { id: 7, title: "AI: Search Algorithms", desc: "BFS, DFS, A*, and Heuristic search methods.", subject: "Artificial Intelligence", semester: "Semester 6", uploader: "faculty", author: "Dr. K. Nair", views: 800, downloads: 200 },
+    { id: 8, title: "Software Eng: Agile vs Waterfall", desc: "Comparative analysis for end-term exams.", subject: "Software Engineering", semester: "Semester 6", uploader: "student", author: "Rahul V.", verifier: "Prof. T. Shah", views: 450, downloads: 90 },
+    { id: 9, title: "Information Security: Cryptography", desc: "RSA, DES, and AES encryption logic explained.", subject: "Info Security", semester: "Semester 7", uploader: "faculty", author: "Prof. G. Bhatt", views: 670, downloads: 150 },
+    { id: 10, title: "Cloud Computing: AWS Essentials", desc: "EC2, S3, and Lambda functions basics.", subject: "Cloud Computing", semester: "Semester 8", uploader: "student", author: "Neha Gupta", verifier: "Dr. P. Joshi", views: 1120, downloads: 480 },
 ];
 
 const SUBJECTS_LIST = ["All Subjects", "Data Structures", "DBMS", "Operating Systems", "Computer Networks", "Algorithms", "Web Technologies", "Artificial Intelligence", "Software Engineering", "Info Security", "Cloud Computing"];
@@ -60,7 +60,9 @@ export default function NotesView({ isDark }: NotesViewProps) {
           semester: uploadSemester,
           status: "Pending Verification",
           date: "Just now",
-          link: driveLink
+          link: driveLink,
+          views: 0,
+          downloads: 0
       };
       setMyUploads([newNote, ...myUploads]);
       setUploadTitle(""); setUploadDesc(""); setDriveLink("");
@@ -75,6 +77,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
   const selectClass = `w-full md:w-auto px-3 py-2 rounded-lg border text-sm outline-none cursor-pointer appearance-none transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700" : "bg-white border-zinc-300 text-zinc-700 hover:border-zinc-400"}`;
 
   return (
+    // Component wrapper flows naturally, no fixed height or overflow-hidden
     <div className="flex flex-col space-y-6">
       
       {/* Header Area */}
@@ -147,13 +150,15 @@ export default function NotesView({ isDark }: NotesViewProps) {
                 Showing {filteredResources.length} Resources
             </div>
 
+            {/* Grid flows naturally to bottom, allows dashboard to scroll */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
                 {filteredResources.length > 0 ? (
                     filteredResources.map((res) => (
                         <NoteCard 
                             key={res.id} title={res.title} desc={res.desc} subject={res.subject} semester={res.semester}
                             uploader={res.uploader} facultyName={res.uploader === "faculty" ? res.author : undefined}
-                            studentName={res.uploader === "student" ? res.author : undefined} verifierName={res.verifier} isDark={isDark}
+                            studentName={res.uploader === "student" ? res.author : undefined} verifierName={res.verifier} 
+                            views={res.views} downloads={res.downloads} isDark={isDark}
                         />
                     ))
                 ) : (
@@ -165,7 +170,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
             </div>
         </>
       ) : (
-        // --- STUDENT UPLOAD FORM (Replaced empty state) ---
+        // --- STUDENT UPLOAD FORM ---
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className={`lg:col-span-1 ${cardClass} h-fit`}>
                 <h3 className={`text-lg font-bold mb-4 ${textMain}`}>Contribute Material</h3>
@@ -209,7 +214,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
                         Student uploads must be verified by course faculty before appearing in the public vault.
                     </div>
 
-                    <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition-colors shadow-md shadow-blue-900/20">
+                    <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-sm transition-colors shadow-md shadow-blue-900/20">
                         Submit for Verification
                     </button>
                 </form>
@@ -250,7 +255,7 @@ export default function NotesView({ isDark }: NotesViewProps) {
 }
 
 // --- NOTE CARD COMPONENT ---
-const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, studentName, verifierName, isDark }: any) => {
+const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, studentName, verifierName, views, downloads, isDark }: any) => {
     const isFaculty = uploader === "faculty";
     const stampColor = isFaculty ? "bg-blue-600 text-white border-blue-500" : "bg-emerald-500 text-white border-emerald-500";
     const StampIcon = isFaculty ? ShieldCheck : User;
@@ -272,7 +277,7 @@ const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, stude
             <p className={`text-xs mb-4 line-clamp-2 flex-1 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>{desc}</p>
 
             <div className={`pt-4 mt-auto border-t ${isDark ? "border-zinc-800" : "border-zinc-100"}`}>
-                <div className="flex justify-between items-end mb-3">
+                <div className="flex justify-between items-end mb-4">
                     <div className="flex flex-col">
                         <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>{semester}</span>
                         <span className={`text-xs font-bold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{subject}</span>
@@ -293,12 +298,24 @@ const NoteCard = ({ title, desc, subject, semester, uploader, facultyName, stude
                     )}
                 </div>
 
-                <div className="flex gap-2 mt-2">
+                {/* --- METRICS ROW --- */}
+                <div className={`flex items-center gap-4 mb-4 text-[11px] font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
+                    <div className="flex items-center gap-1.5" title="Views">
+                        <Eye size={14} className={isDark ? "text-zinc-500" : "text-zinc-400"} /> 
+                        {views.toLocaleString()}
+                    </div>
+                    <div className="flex items-center gap-1.5" title="Downloads">
+                        <Download size={14} className={isDark ? "text-zinc-500" : "text-zinc-400"} /> 
+                        {downloads.toLocaleString()}
+                    </div>
+                </div>
+
+                <div className="flex gap-2">
                     <button className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors ${isDark ? "bg-zinc-800 hover:bg-zinc-700 text-zinc-300" : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700"}`}>
                         <Eye size={14} /> View
                     </button>
                     <button className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}>
-                        <LinkIcon size={14} /> Get Link
+                        <Download size={14} /> Download
                     </button>
                 </div>
             </div>
