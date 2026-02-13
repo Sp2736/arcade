@@ -1,16 +1,11 @@
-// import MainLayout from "@/src/components/home/MainLayout";
-
-// export default function Home() {
-//   return (
-//     <main>
-//       <MainLayout />
-//     </main>
-//   );
-// }
+import MainLayout from "@/src/components/home/MainLayout";
 import FacultyDashboard from "@/src/components/dashboard-faculty/FacultyDashboard";
 import StudentDashboard from "@/src/components/dashboard-student/StudentDashboard";
+import { Main } from "next/document";
 
-export default function Page() {
+// export default function Page() {
+export default function Home() {
+  return <MainLayout/>;
   return <StudentDashboard />;
 //  return <FacultyDashboard/>;
 }
