@@ -1,4 +1,3 @@
-import MainLayout from "@/src/components/home/MainLayout";
 import FacultyDashboard from "@/src/components/dashboard-faculty/FacultyDashboard";
 import StudentDashboard from "@/src/components/dashboard-student/StudentDashboard";
 import { Main } from "next/document";

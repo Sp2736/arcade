@@ -121,7 +121,10 @@ export default function FacultyDashboard() {
       >
         <div className={`h-16 flex items-center px-5 border-b shrink-0 ${theme.border} ${isMobile ? "justify-between" : ""}`}>
           <div className="flex items-center overflow-hidden">
-            <div className="w-8 h-8 bg-blue-700 rounded-md flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0">A</div>
+            <div className="w-8 h-8 rounded-md flex items-center justify-center overflow-hidden shadow-sm shrink-0 bg-white">
+  {/* Replace 'logo.png' with your actual file name */}
+  <img src="/logo-small.png" alt="ARCADE Logo" className="w-full h-full object-contain p-0.5" />
+</div>
             <div className={`ml-3 font-bold text-lg tracking-tight whitespace-nowrap transition-all duration-300 ${!isMobile && !isSidebarOpen ? "opacity-0 w-0" : "opacity-100 w-auto"}`}>
                 ARCADE <span className="text-xs font-normal text-slate-500 ml-1">ADMIN</span>
             </div>
