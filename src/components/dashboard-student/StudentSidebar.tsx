@@ -22,18 +22,16 @@ interface SidebarProps {
   onMobileClose: () => void;
 }
 
-// ... inside the file ...
-
-// 2. Add the 'alumni' object to your MENU_ITEMS
 const MENU_ITEMS = [
   { id: "overview", label: "Command Center", icon: LayoutDashboard },
   { id: "notes", label: "Resource Vault", icon: FileText },
   { id: "roadmap", label: "Career Roadmaps", icon: Map },
   { id: "skills", label: "Skill Navigator", icon: Cpu },
-  { id: "alumni", label: "Expert Network", icon: Users }, // The new option
+  { id: "alumni", label: "Expert Network", icon: Users },
   { id: "resumes", label: "Resume Archives", icon: FileText },
   { id: "resources", label: "Practice Zone", icon: Library },
 ];
+
 export default function StudentSidebar({
   activeView,
   onNavigate,
@@ -43,12 +41,20 @@ export default function StudentSidebar({
   onMobileClose,
 }: SidebarProps) {
   const firstName = studentName.split(" ")[0].toUpperCase();
-  // UPDATED BG: Dark mode is now a solid tint
+  
   const bgClass = isDarkMode
     ? "bg-[#09090b] border-zinc-800"
     : "bg-white border-zinc-200";
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const textSub = isDarkMode ? "text-zinc-500" : "text-zinc-500";
+
+  // --- 1. ADD THIS LOGOUT FUNCTION ---
+  const handleLogoutClick = () => {
+    // Remove the user session data
+    localStorage.removeItem("arcade-user");
+    // Reload the page to reset MainLayout state and return to Login
+    window.location.reload();
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full p-6">
@@ -56,7 +62,6 @@ export default function StudentSidebar({
       <div className="flex flex-col items-start mb-10">
         <div className="flex items-center justify-between w-full">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-blue-600/20 bg-white">
-            {/* Replace 'logo.png' with your actual file name */}
             <img
               src="/logo-small.png"
               alt="ARCADE Logo"
@@ -116,11 +121,12 @@ export default function StudentSidebar({
         })}
       </div>
 
-      {/* Footer - FIXED: HOVER EFFECTS */}
+      {/* Footer */}
       <div
         className={`pt-6 border-t ${isDarkMode ? "border-zinc-800" : "border-zinc-200"}`}
       >
         <button
+          onClick={handleLogoutClick} // --- 2. ATTACH THE CLICK HANDLER HERE ---
           className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
             isDarkMode
               ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10"

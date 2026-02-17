@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Menu, MessageCircle } from "lucide-react";
+import { Menu, MessageCircle, Loader2 } from "lucide-react";
 
 import { Sidebar, MobileMenu, ViewState } from "./Navigation";
 import AboutPortal from "./AboutPortal";
@@ -12,20 +12,74 @@ import FAQSidebar from "./FAQSidebar";
 import BackgroundMeteors from "./BackgroundMeteors";
 import AuthView from "./AuthView";
 import ContactView from "./ContactView";
+import StudentDashboard from "../dashboard-student/StudentDashboard";
 
 export default function MainLayout() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
   
-  // State for scrolling to specific sections (e.g., Core Team)
+  // --- AUTH STATE ---
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for existing session
+    const storedUser = localStorage.getItem("arcade-user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
 
   const handleNavigate = (view: ViewState, scrollId?: string) => {
     setCurrentView(view);
     setScrollTarget(scrollId || null);
   };
 
+  const handleAuthSuccess = (userData: any) => {
+    setUser(userData);
+    localStorage.setItem("arcade-user", JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("arcade-user");
+    setUser(null);
+    setCurrentView("home");
+  };
+
+  // 1. Loading State (Prevents flicker)
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full bg-[#050505] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      </div>
+    );
+  }
+
+  // 2. Logged In State (Redirects to Dashboards)
+  if (user) {
+    if (user.role === 'faculty') {
+      // Temporary Faculty Placeholder until Dashboard is ready
+      return (
+        <div className="h-screen w-full bg-[#050505] flex flex-col items-center justify-center text-white space-y-4">
+          <h1 className="text-2xl font-bold">Faculty Portal</h1>
+          <p className="text-zinc-400">Welcome, {user.full_name}. The Faculty Dashboard is under construction.</p>
+          <button 
+            onClick={handleLogout}
+            className="px-6 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
+        </div>
+      );
+    }
+
+    return <StudentDashboard user={user} onLogout={handleLogout} />;
+  }
+
+  // 3. Logged Out State (Landing Page / Auth)
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white font-sans overflow-hidden selection:bg-blue-500/30 relative">
       
@@ -48,8 +102,6 @@ export default function MainLayout() {
         onMobileClose={() => setMobileMenuOpen(false)} 
       />
 
-      {/* --- FIX: MOBILE TOGGLE (MOVED HERE & MADE FIXED) --- */}
-      {/* Now sits outside the scrollable area with fixed positioning */}
       <div className="fixed top-6 left-6 z-[100] md:hidden">
           <button 
             onClick={() => setMobileMenuOpen(true)} 
@@ -62,7 +114,6 @@ export default function MainLayout() {
       {/* --- MAIN CONTENT AREA --- */}
       <div className="flex-1 h-full overflow-y-auto overflow-x-hidden relative z-10 scroll-smooth custom-scrollbar">
         
-        {/* View Switcher */}
         <div className="min-h-full w-full flex flex-col">
           <AnimatePresence mode="wait">
              {currentView === "home" && (
@@ -85,7 +136,7 @@ export default function MainLayout() {
              
              {currentView === "login" && (
                  <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full h-full">
-                    <AuthView />
+                    <AuthView onAuthSuccess={handleAuthSuccess} /> 
                  </motion.div>
              )}
              
@@ -97,7 +148,6 @@ export default function MainLayout() {
           </AnimatePresence>
         </div>
 
-        {/* --- FAQ SIDEBAR --- */}
         <FAQSidebar isOpen={isFAQOpen} onClose={() => setIsFAQOpen(false)} />
       </div>
       
@@ -114,7 +164,6 @@ export default function MainLayout() {
                 className="fixed bottom-8 right-8 z-[100] w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-600/50 hover:bg-blue-500 transition-colors"
             >
                 <MessageCircle size={24} />
-                <span className="absolute inset-0 rounded-full border border-blue-400 opacity-0 animate-ping" />
             </motion.button>
         )}
       </AnimatePresence>

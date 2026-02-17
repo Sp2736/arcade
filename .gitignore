@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# team data file js
+seed-team.js
+
+# api text files
+supabasekeys.txt
