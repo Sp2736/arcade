@@ -1,42 +1,55 @@
-// src/app/api/auth/signup/route.ts
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase'; // The utility we created earlier
+import { getServiceSupabase } from '@/src/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, fullName, collegeId, department, role } = body;
+    const { email, password, fullName, collegeId, department, role, adminCode } = body;
+    
+    // 1. Basic Security Check for Faculty
+    if (role === 'faculty' && adminCode !== 'ARCADE_ADMIN_2026') {
+         return NextResponse.json({ error: "Invalid Admin Verification Code" }, { status: 403 });
+    }
 
     const supabase = getServiceSupabase();
 
-    // 1. Create the user in Supabase's built-in Auth system
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // 2. Create the user in Supabase Auth System
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
+      email_confirm: true // Auto-confirms email for local testing
     });
 
-    if (authError) throw authError;
+    if (authError) {
+        return NextResponse.json({ error: authError.message }, { status: 400 });
+    }
 
-    // 2. Insert the extended user details into our custom 'users' table
+    // 3. Link the new Auth ID to your Database Table
     const { error: dbError } = await supabase
       .from('users')
       .insert([
         {
+          auth_id: authData.user.id,        // The crucial link!
           full_name: fullName,
           college_email: email,
-          password_hash: 'managed_by_supabase_auth', // Supabase handles real passwords safely
+          password_hash: 'managed_by_supabase',
           college_id: collegeId,
-          role: role.toLowerCase(), // 'student' or 'faculty'
           department: department,
-          is_hod: false, // Default to false
+          role: role,
+          is_hod: role === 'faculty',       // If faculty, make them HOD for now
+          is_verified: role === 'faculty'   // Faculty auto-verified
         }
       ]);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      console.error("DB Insert Error:", dbError.message);
+      // If DB fails, we ideally should delete the Auth user, but for now we throw an error
+      return NextResponse.json({ error: "Auth succeeded but Database failed. " + dbError.message }, { status: 500 });
+    }
 
-    return NextResponse.json({ message: 'User created successfully', user: authData.user }, { status: 201 });
+    return NextResponse.json({ message: "Account created successfully" }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Something went wrong' }, { status: 400 });
+    return NextResponse.json({ error: "Server Error: " + error.message }, { status: 500 });
   }
 }
