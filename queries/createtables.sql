@@ -1,132 +1,108 @@
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    
-    -- Auth Details
-    full_name VARCHAR(255) NOT NULL,
-    college_email VARCHAR(255) UNIQUE NOT NULL,
-    personal_email VARCHAR(255) UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    
-    -- Identification
-    college_id VARCHAR(50) UNIQUE NOT NULL, -- e.g., "24DCS088"
-    role VARCHAR(20) CHECK (role IN ('student', 'faculty', 'admin')) NOT NULL,
-    department VARCHAR(100) NOT NULL,       -- e.g., "Computer Engineering"
-    
-    -- Profile Fields (New)
-    bio TEXT,
-    phone_number VARCHAR(20),
-    profile_picture VARCHAR(500),           -- URL to S3/Cloudinary
-    
-    -- Student Specific
-    target_role VARCHAR(100),               -- e.g., "Frontend Developer"
-    
-    -- Faculty Specific
-    designation VARCHAR(100),               -- e.g., "Assistant Professor"
-    cabin_location VARCHAR(50),
-    is_hod BOOLEAN DEFAULT FALSE,           -- Critical for Resume Approval workflow
-    
-    -- Security & Locks
-    last_login TIMESTAMP,
-    last_profile_update TIMESTAMP,          -- For the 24hr edit lock
-    last_role_update TIMESTAMP,             -- For the 7-day role change lock
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
-CREATE TABLE notifications (
-    notification_id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(user_id) ON DELETE CASCADE, -- Who receives it
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    type VARCHAR(20) CHECK (type IN ('info', 'success', 'warning', 'error')) DEFAULT 'info',
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.audit_logs (
+  log_id integer NOT NULL DEFAULT nextval('audit_logs_log_id_seq'::regclass),
+  user_id integer,
+  action character varying NOT NULL,
+  details jsonb,
+  ip_address character varying,
+  timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT audit_logs_pkey PRIMARY KEY (log_id),
+  CONSTRAINT audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
-
--- Standard Catalog of Subjects
-CREATE TABLE subjects (
-    subject_id SERIAL PRIMARY KEY,
-    subject_name VARCHAR(255) NOT NULL,     -- e.g., "Operating Systems"
-    subject_code VARCHAR(20) UNIQUE,        -- e.g., "CS402"
-    semester VARCHAR(20) NOT NULL,          -- e.g., "Semester 4"
-    department VARCHAR(100) NOT NULL
+CREATE TABLE public.faculty_teaching_load (
+  load_id integer NOT NULL DEFAULT nextval('faculty_teaching_load_load_id_seq'::regclass),
+  faculty_id integer,
+  subject_id integer,
+  is_theory boolean DEFAULT false,
+  is_practical boolean DEFAULT false,
+  CONSTRAINT faculty_teaching_load_pkey PRIMARY KEY (load_id),
+  CONSTRAINT faculty_teaching_load_faculty_id_fkey FOREIGN KEY (faculty_id) REFERENCES public.users(user_id),
+  CONSTRAINT faculty_teaching_load_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.subjects(subject_id)
 );
-
--- Linking Faculty to Subjects (The Toggle System)
-CREATE TABLE faculty_teaching_load (
-    load_id SERIAL PRIMARY KEY,
-    faculty_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    subject_id INT REFERENCES subjects(subject_id) ON DELETE CASCADE,
-    
-    -- The specific toggles from your UI
-    is_theory BOOLEAN DEFAULT FALSE,
-    is_practical BOOLEAN DEFAULT FALSE,
-    
-    UNIQUE(faculty_id, subject_id) -- Prevent duplicate assignments
+CREATE TABLE public.notes (
+  note_id integer NOT NULL DEFAULT nextval('notes_note_id_seq'::regclass),
+  title character varying NOT NULL,
+  description text,
+  subject_id integer,
+  semester character varying,
+  file_path character varying NOT NULL,
+  uploaded_by integer,
+  verified_by integer,
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying]::text[])),
+  rejection_reason text,
+  download_count integer DEFAULT 0,
+  view_count integer DEFAULT 0,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT notes_pkey PRIMARY KEY (note_id),
+  CONSTRAINT notes_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES public.subjects(subject_id),
+  CONSTRAINT notes_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id),
+  CONSTRAINT notes_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES public.users(user_id)
 );
-
-CREATE TABLE notes (
-    note_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    
-    -- Metadata
-    subject_id INT REFERENCES subjects(subject_id), -- Links to subject
-    semester VARCHAR(20),                           -- Redundant but fast for filtering
-    file_path VARCHAR(500) NOT NULL,                -- URL to file storage
-    
-    -- Ownership & Approval
-    uploaded_by INT REFERENCES users(user_id) ON DELETE SET NULL,
-    verified_by INT REFERENCES users(user_id) ON DELETE SET NULL, -- HOD/Faculty ID
-    
-    -- Status Workflow
-    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
-    rejection_reason TEXT,
-    
-    -- Stats
-    download_count INT DEFAULT 0,
-    view_count INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.notifications (
+  notification_id integer NOT NULL DEFAULT nextval('notifications_notification_id_seq'::regclass),
+  user_id integer,
+  title character varying NOT NULL,
+  message text NOT NULL,
+  type character varying DEFAULT 'info'::character varying CHECK (type::text = ANY (ARRAY['info'::character varying, 'success'::character varying, 'warning'::character varying, 'error'::character varying]::text[])),
+  is_read boolean DEFAULT false,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT notifications_pkey PRIMARY KEY (notification_id),
+  CONSTRAINT notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(user_id)
 );
-
-CREATE TABLE resume_samples (
-    resume_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,            -- e.g., "Google STEP Intern Format"
-    
-    -- Classification (Matches ResumeResourcesView.tsx)
-    domain VARCHAR(100) NOT NULL,           -- e.g., "Software Engineering"
-    experience_level VARCHAR(50) CHECK (experience_level IN ('intern', 'fresher', 'experienced', 'advanced')),
-    
-    file_path VARCHAR(500) NOT NULL,
-    uploaded_by INT REFERENCES users(user_id) ON DELETE SET NULL,
-    
-    -- HOD Verification Workflow
-    status VARCHAR(20) DEFAULT 'pending_hod' CHECK (status IN ('pending_hod', 'approved', 'rejected')),
-    rejection_reason TEXT,
-    
-    download_count INT DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.resume_samples (
+  resume_id integer NOT NULL DEFAULT nextval('resume_samples_resume_id_seq'::regclass),
+  title character varying NOT NULL,
+  domain character varying NOT NULL,
+  experience_level character varying CHECK (experience_level::text = ANY (ARRAY['intern'::character varying, 'fresher'::character varying, 'experienced'::character varying, 'advanced'::character varying]::text[])),
+  file_path character varying NOT NULL,
+  uploaded_by integer,
+  status character varying DEFAULT 'pending_hod'::character varying CHECK (status::text = ANY (ARRAY['pending_hod'::character varying, 'approved'::character varying, 'rejected'::character varying]::text[])),
+  rejection_reason text,
+  download_count integer DEFAULT 0,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT resume_samples_pkey PRIMARY KEY (resume_id),
+  CONSTRAINT resume_samples_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.users(user_id)
 );
-
-CREATE TABLE student_progress (
-    progress_id SERIAL PRIMARY KEY,
-    student_id INT REFERENCES users(user_id) ON DELETE CASCADE,
-    
-    -- Stores the user's current goal
-    target_role VARCHAR(100), 
-    
-    -- Stores the list of completed skill IDs/Names as a JSON array
-    -- Example: ["HTML5", "React", "Docker"]
-    completed_nodes JSONB DEFAULT '[]', 
-    
-    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(student_id, target_role) -- One active progress record per role per student
+CREATE TABLE public.student_progress (
+  progress_id integer NOT NULL DEFAULT nextval('student_progress_progress_id_seq'::regclass),
+  student_id integer,
+  target_role character varying,
+  completed_nodes jsonb DEFAULT '[]'::jsonb,
+  last_updated timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT student_progress_pkey PRIMARY KEY (progress_id),
+  CONSTRAINT student_progress_student_id_fkey FOREIGN KEY (student_id) REFERENCES public.users(user_id)
 );
-
-CREATE TABLE audit_logs (
-    log_id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(user_id),
-    action VARCHAR(255) NOT NULL,           -- e.g., "APPROVED_RESUME", "CHANGED_ROLE"
-    details JSONB,                          -- Extra data (e.g., which resume ID)
-    ip_address VARCHAR(45),
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.subjects (
+  subject_id integer NOT NULL DEFAULT nextval('subjects_subject_id_seq'::regclass),
+  subject_name character varying NOT NULL,
+  subject_code character varying UNIQUE,
+  semester character varying NOT NULL,
+  department character varying NOT NULL,
+  CONSTRAINT subjects_pkey PRIMARY KEY (subject_id)
+);
+CREATE TABLE public.users (
+  user_id integer NOT NULL DEFAULT nextval('users_user_id_seq'::regclass),
+  full_name character varying NOT NULL,
+  college_email character varying NOT NULL UNIQUE,
+  personal_email character varying UNIQUE,
+  password_hash character varying NOT NULL,
+  college_id character varying NOT NULL UNIQUE,
+  role character varying NOT NULL CHECK (role::text = ANY (ARRAY['student'::character varying, 'faculty'::character varying, 'admin'::character varying]::text[])),
+  department character varying NOT NULL,
+  bio text,
+  phone_number character varying,
+  profile_picture character varying,
+  target_role character varying,
+  designation character varying,
+  cabin_location character varying,
+  is_hod boolean DEFAULT false,
+  last_login timestamp without time zone,
+  last_profile_update timestamp without time zone,
+  last_role_update timestamp without time zone,
+  created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  auth_id uuid UNIQUE,
+  is_verified boolean DEFAULT false,
+  CONSTRAINT users_pkey PRIMARY KEY (user_id)
 );

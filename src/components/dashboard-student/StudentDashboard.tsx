@@ -45,8 +45,20 @@ export const ROADMAP_DATA: any = {
 
 type Notification = { id: number; title: string; desc: string; time: string; type: "info" | "success" | "alert"; };
 
-export default function StudentDashboard() {
+interface StudentDashboardProps {
+  user?: any;
+  onLogout?: () => void;
+}
+
+export default function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [currentView, setCurrentView] = useState("overview");
+  
+  // Create safe dynamic variables based on the logged-in user
+  const fullName = user?.full_name || "Student Name";
+  const firstName = fullName.split(" ")[0];
+  const collegeId = user?.college_id?.toUpperCase() || "ID PENDING";
+  const department = user?.department?.toUpperCase() || "DEPARTMENT PENDING";
+  const userInitials = firstName.substring(0, 2).toUpperCase();
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -245,7 +257,7 @@ export default function StudentDashboard() {
                     {currentView === "overview" && <Overview isDark={isDarkMode} targetRole={targetRole} />}
                     {currentView === "profile" && <ProfileView isDarkMode={isDarkMode} targetRole={targetRole} onRoleChange={(role) => { setTargetRole(role); setCheckedSkills([]); }} isUnlocked={isRoleUnlocked} />}
                     {currentView === "roadmap" && <RoadmapView isDark={isDarkMode} targetRole={targetRole} checkedSkills={checkedSkills} setCheckedSkills={setCheckedSkills} roleData={currentRoleData} />}
-                    {currentView === "notes" && <NotesView isDark={isDarkMode} />}
+                    {currentView === "notes" && <NotesView isDark={isDarkMode} user={user} />}
                     {currentView === "skills" && <SkillNavigator isDark={isDarkMode} />}
                     {currentView === "resumes" && <ResumeResourcesView isDark={isDarkMode} initialTab="resumes" />}
                     {currentView === "resources" && <ResumeResourcesView isDark={isDarkMode} initialTab="resources" />}

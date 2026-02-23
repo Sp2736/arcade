@@ -6,50 +6,48 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password, fullName, collegeId, department, role, adminCode } = body;
     
-    // 1. Basic Security Check for Faculty
+    // Security Check for Faculty
     if (role === 'faculty' && adminCode !== 'ARCADE_ADMIN_2026') {
          return NextResponse.json({ error: "Invalid Admin Verification Code" }, { status: 403 });
     }
 
     const supabase = getServiceSupabase();
 
-    // 2. Create the user in Supabase Auth System
+    // 1. Create the user in Supabase Auth System
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
-      email_confirm: true // Auto-confirms email for local testing
+      email_confirm: true 
     });
 
-    if (authError) {
-        return NextResponse.json({ error: authError.message }, { status: 400 });
-    }
+    if (authError) throw new Error(authError.message);
 
-    // 3. Link the new Auth ID to your Database Table
+    // 2. Link the Auth ID to your new Database Table
     const { error: dbError } = await supabase
       .from('users')
       .insert([
         {
-          auth_id: authData.user.id,        // The crucial link!
+          auth_id: authData.user.id,
           full_name: fullName,
           college_email: email,
-          password_hash: 'managed_by_supabase',
+          password_hash: 'managed_by_supabase', // Required by your NOT NULL constraint
           college_id: collegeId,
           department: department,
           role: role,
-          is_hod: role === 'faculty',       // If faculty, make them HOD for now
-          is_verified: role === 'faculty'   // Faculty auto-verified
+          is_hod: role === 'faculty',
+          is_verified: role === 'faculty'
         }
       ]);
 
     if (dbError) {
-      console.error("DB Insert Error:", dbError.message);
-      // If DB fails, we ideally should delete the Auth user, but for now we throw an error
-      return NextResponse.json({ error: "Auth succeeded but Database failed. " + dbError.message }, { status: 500 });
+      // If DB fails, clean up the auth user so we don't get ghost accounts
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      throw new Error("Database failed: " + dbError.message);
     }
 
     return NextResponse.json({ message: "Account created successfully" }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Server Error: " + error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

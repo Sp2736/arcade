@@ -3,37 +3,36 @@ import { getServiceSupabase } from '@/src/lib/supabase';
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email, password } = body;
+
     const supabase = getServiceSupabase();
 
-    // 1. Log into Supabase Auth system
+    // 1. Verify password with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 401 });
-    }
+    if (authError) throw new Error("Invalid credentials.");
 
-    // 2. Fetch the full profile from your 'users' table using the UUID
-    const { data: userData, error: dbError } = await supabase
+    // 2. Fetch the corresponding profile from your brand new 'users' table
+    const { data: userProfile, error: dbError } = await supabase
       .from('users')
       .select('*')
-      .eq('auth_id', authData.user.id) 
+      .eq('auth_id', authData.user.id)
       .single();
 
-    if (dbError || !userData) {
-      console.error("DB Fetch Error:", dbError);
-      return NextResponse.json({ 
-        error: "Auth successful, but no database profile found. Run seed script." 
-      }, { status: 404 });
+    if (dbError || !userProfile) {
+      throw new Error("Auth successful, but no database profile found.");
     }
 
-    // 3. Return the user data to the frontend
-    return NextResponse.json({ user: userData }, { status: 200 });
+    // 3. Update the last_login timestamp (as required by your new schema)
+    await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('user_id', userProfile.user_id);
+
+    return NextResponse.json({ user: userProfile }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: "Server Error: " + error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }
