@@ -5,6 +5,6 @@ import MainLayout from "@/src/components/home/MainLayout";
 // export default function Page() {
 export default function Home() {
   return <MainLayout/>;
-  return <StudentDashboard />;
+  // return <StudentDashboard />;
 //  return <FacultyDashboard/>;
 }

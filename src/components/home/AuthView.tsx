@@ -112,30 +112,31 @@ function LoginForm({ onAuthSuccess }: { onAuthSuccess?: (userData: any) => void 
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrorMsg("");
+  e.preventDefault();
+  setLoading(true);
+  setErrorMsg("");
 
-    try {
-      const res = await fetch("@/app/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+  try {
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }), 
+    });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to login");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Failed to login");
 
-      // Trigger the parent callback to switch views immediately
-      if (onAuthSuccess) {
-        onAuthSuccess(data.user);
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message);
-    } finally {
-      setLoading(false);
+    // Corrected line here!
+    if (onAuthSuccess) {
+      onAuthSuccess(data.user);
     }
-  };
+
+  } catch (err: any) {
+    setErrorMsg(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <motion.form
