@@ -1,183 +1,146 @@
 "use client";
 
-import React, { useState } from "react";
-import { Link as LinkIcon, FileText, FileBadge, Clock, Briefcase, GraduationCap, AlertCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { UploadCloud, FileText, CheckCircle, Clock, AlertCircle, Loader2, Link as LinkIcon } from "lucide-react";
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 interface FacultyUploadsProps {
   isDark: boolean;
-  onSimulateHODResponse: (approved: boolean) => void;
+  user?: any;
 }
 
-const EXPEREINCE_LEVELS = ["intern", "fresher", "experienced"];
-const DOMAINS = ["Software Engineering", "Data Science", "Web Development", "App Development", "DevOps", "Cybersecurity"];
+const SUBJECTS_LIST = ["Calculus", "Data Structures", "DBMS", "Operating Systems", "Computer Networks", "Software Engineering"];
+const SEMESTERS_LIST = ["Semester 1", "Semester 2", "Semester 3", "Semester 4", "Semester 5", "Semester 6", "Semester 7", "Semester 8"];
 
-export default function FacultyUploads({ isDark, onSimulateHODResponse }: FacultyUploadsProps) {
-  const [activeTab, setActiveTab] = useState<"material" | "resume">("material");
-  
-  // Form State
-  const [title, setTitle] = useState("");
-  const [subject, setSubject] = useState("Operating Systems");
-  const [domain, setDomain] = useState(DOMAINS[0]);
-  const [expLevel, setExpLevel] = useState(EXPEREINCE_LEVELS[0]);
-  const [driveLink, setDriveLink] = useState(""); // NEW: Drive Link State
+export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
+  const [myUploads, setMyUploads] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  const [uploads, setUploads] = useState([
-    { id: 1, title: "Data Structures Notes", type: "Material", date: "Oct 20, 2025", status: "Published", link: "#" },
-    { id: 2, title: "My Updated Resume", type: "Resume", date: "Oct 25, 2025", status: "Pending HOD", link: "#" },
-  ]);
+  const [uploadData, setUploadData] = useState({
+      title: "", description: "", subject_name: "Operating Systems", semester: "Semester 4", file_path: ""
+  });
 
-  const handleUpload = (e: React.FormEvent) => {
-    e.preventDefault();
-    const newUpload = { 
-        id: Date.now(), 
-        title: title || (activeTab === "resume" ? "Faculty Resume" : "New Material"), 
-        type: activeTab === "resume" ? "Resume" : "Material", 
-        date: "Just now", 
-        status: activeTab === "resume" ? "Pending HOD" : "Published",
-        details: activeTab === "resume" ? `${domain} • ${expLevel}` : subject,
-        link: driveLink
-    };
-    
-    setUploads([newUpload, ...uploads]);
-    setTitle(""); 
-    setDriveLink(""); // Reset
+  const fetchMyUploads = async () => {
+      if (!user?.user_id) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      setLoading(true);
+      try {
+          // Re-using the same notes GET endpoint, it returns myUploadsData
+          const res = await fetch(`/api/notes?user_id=${user.user_id}&department=${encodeURIComponent(user.department)}`, {
+              headers: { 'Authorization': `Bearer ${session?.access_token}` }
+          });
+          if (res.ok) {
+              const data = await res.json();
+              setMyUploads(data.myUploadsData || []);
+          }
+      } catch (error) { console.error("Error fetching faculty uploads"); }
+      setLoading(false);
   };
 
-  const cardClass = `p-4 md:p-6 rounded-md border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`;
-  const inputClass = `w-full px-3 py-2 rounded-md border text-sm outline-none transition-all focus:border-blue-500 ${isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white border-slate-300 text-slate-900"}`;
-  const labelClass = `block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-slate-400" : "text-slate-500"}`;
+  useEffect(() => { fetchMyUploads(); }, [user]);
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      setErrorMsg("");
+
+      try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch('/api/notes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+              body: JSON.stringify({ ...uploadData, user_id: user.user_id, role: 'faculty' })
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Upload failed");
+
+          setUploadData({ title: "", description: "", subject_name: "Operating Systems", semester: "Semester 4", file_path: "" });
+          fetchMyUploads(); 
+      } catch (error: any) { setErrorMsg(error.message); } 
+      finally { setIsSubmitting(false); }
+  };
+
+  const cardClass = `p-6 rounded-md border shadow-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`;
+  const inputClass = `w-full px-3 py-2 rounded-md border text-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${isDark ? "bg-slate-950 border-slate-800 text-slate-200" : "bg-white border-slate-300 text-slate-900"}`;
 
   return (
-    <div className="space-y-6 pb-24">
-      <div className="flex justify-between items-center">
-        <div>
-            <h2 className={`text-xl font-bold ${isDark ? "text-white" : "text-slate-900"}`}>My Uploads</h2>
-            <p className={`text-sm ${isDark ? "text-slate-400" : "text-slate-500"}`}>Manage your shared resources.</p>
-        </div>
+    <div className="h-full flex flex-col md:flex-row gap-6 animate-fade-in">
+      {/* Upload Form */}
+      <div className={`w-full md:w-1/3 flex flex-col ${cardClass}`}>
+        <h3 className={`text-lg font-bold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}>Upload Material</h3>
+        <p className={`text-xs mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>Faculty uploads bypass verification and go live instantly.</p>
+        
+        {errorMsg && <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-500 text-sm">{errorMsg}</div>}
+
+        <form onSubmit={handleUploadSubmit} className="space-y-4 flex-1">
+            <div>
+                <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Material Title</label>
+                <input type="text" required value={uploadData.title} onChange={e => setUploadData({...uploadData, title: e.target.value})} className={inputClass} placeholder="e.g., Mid-Sem Question Bank" />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Google Drive Link</label>
+                <input type="url" required value={uploadData.file_path} onChange={e => setUploadData({...uploadData, file_path: e.target.value})} className={inputClass} placeholder="https://drive.google.com/..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Subject</label>
+                    <select value={uploadData.subject_name} onChange={e => setUploadData({...uploadData, subject_name: e.target.value})} className={inputClass}>
+                        {SUBJECTS_LIST.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-semibold uppercase text-slate-500 mb-1.5">Semester</label>
+                    <select value={uploadData.semester} onChange={e => setUploadData({...uploadData, semester: e.target.value})} className={inputClass}>
+                        {SEMESTERS_LIST.map(s => <option key={s}>{s}</option>)}
+                    </select>
+                </div>
+            </div>
+            <button disabled={isSubmitting} type="submit" className="w-full mt-4 py-2.5 rounded-md text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2">
+                {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />} 
+                {isSubmitting ? "Publishing..." : "Publish to Vault"}
+            </button>
+        </form>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* History */}
+      <div className={`w-full md:w-2/3 flex flex-col ${cardClass}`}>
+        <h3 className={`text-lg font-bold mb-4 ${isDark ? "text-white" : "text-slate-900"}`}>My Upload History</h3>
         
-        {/* --- UPLOAD FORM --- */}
-        <div className={`lg:col-span-1 ${cardClass}`}>
-            <div className="flex border-b mb-6 pb-1 gap-4 border-slate-200 dark:border-slate-800">
-                <button onClick={() => setActiveTab("material")} className={`text-sm font-bold pb-2 border-b-2 transition-colors ${activeTab === "material" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Upload Material</button>
-                <button onClick={() => setActiveTab("resume")} className={`text-sm font-bold pb-2 border-b-2 transition-colors ${activeTab === "resume" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-500 hover:text-slate-700"}`}>Upload Resume</button>
-            </div>
-            
-            <form onSubmit={handleUpload} className="space-y-4">
-                
-                <div>
-                    <label className={labelClass}>Title / Reference</label>
-                    <input 
-                        type="text" 
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder={activeTab === "material" ? "e.g. Unit 4 Notes" : "e.g. Senior SDE Profile"} 
-                        className={inputClass} 
-                        required 
-                    />
+        <div className="flex-1 overflow-y-auto pr-2">
+            {loading ? <div className="text-center p-10 text-slate-500"><Loader2 className="animate-spin mx-auto" size={24} /></div> :
+             myUploads.length === 0 ? (
+                <div className="text-center py-16 text-slate-500 border border-dashed rounded-lg border-slate-300 dark:border-slate-800">
+                    <FileText size={32} className="mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">You haven't published any materials yet.</p>
                 </div>
-
-                {activeTab === "material" && (
-                    <div>
-                        <label className={labelClass}>Subject</label>
-                        <select value={subject} onChange={(e) => setSubject(e.target.value)} className={inputClass}>
-                            <option>Operating Systems</option>
-                            <option>Computer Networks</option>
-                            <option>Data Structures</option>
-                        </select>
-                    </div>
-                )}
-
-                {activeTab === "resume" && (
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="col-span-2">
-                            <label className={labelClass}>Domain</label>
-                            <div className="relative">
-                                <Briefcase className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                                <select value={domain} onChange={(e) => setDomain(e.target.value)} className={`${inputClass} pl-9`}>
-                                    {DOMAINS.map(d => <option key={d} value={d}>{d}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                        <div className="col-span-2">
-                            <label className={labelClass}>Experience Level</label>
-                            <div className="relative">
-                                <GraduationCap className="absolute left-3 top-2.5 text-slate-500" size={14} />
-                                <select value={expLevel} onChange={(e) => setExpLevel(e.target.value)} className={`${inputClass} pl-9 capitalize`}>
-                                    {EXPEREINCE_LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* NEW: URL Input instead of File Dropzone */}
-                <div>
-                    <label className={labelClass}>Resource Link</label>
-                    <div className="relative">
-                        <LinkIcon className="absolute left-3 top-2.5 text-blue-500" size={16} />
-                        <input 
-                            type="url" 
-                            value={driveLink}
-                            onChange={(e) => setDriveLink(e.target.value)}
-                            placeholder="Paste Google Drive link..." 
-                            className={`${inputClass} pl-9`} 
-                            required 
-                        />
-                    </div>
-                    {/* Permission Warning */}
-                    <div className="flex items-start gap-2 mt-2 text-[10px] text-blue-500 bg-blue-500/10 p-2 rounded border border-blue-500/20">
-                        <AlertCircle size={12} className="shrink-0 mt-0.5" />
-                        <p>Ensure the link access is set to <strong>"Anyone with the link can view"</strong> so students can access it.</p>
-                    </div>
-                </div>
-
-                {activeTab === "resume" && (
-                    <div className={`text-xs p-3 rounded border ${isDark ? "bg-amber-900/10 border-amber-900/30 text-amber-400" : "bg-amber-50 border-amber-200 text-amber-700"}`}>
-                        <div className="flex gap-2 font-bold mb-1"><Clock size={14} /> Approval Required</div>
-                        Resumes must be approved by the HOD.
-                    </div>
-                )}
-
-                <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-sm transition-colors mt-2">
-                    Submit {activeTab === "resume" ? "Resume" : "Material"} Link
-                </button>
-            </form>
-        </div>
-
-        {/* --- RECENT UPLOADS LIST --- */}
-        <div className={`lg:col-span-2 ${cardClass}`}>
-             <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? "text-slate-400" : "text-slate-500"}`}>Recent Uploads</h3>
-             <div className="space-y-3">
-                {uploads.map((item: any) => (
-                    <div key={item.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-md border gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-100"}`}>
-                        <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-md ${isDark ? "bg-slate-900 text-slate-400" : "bg-white text-slate-500 border border-slate-200"}`}>
-                                {item.type === "Resume" ? <FileBadge size={20} /> : <FileText size={20} />}
-                            </div>
+            ) : (
+                <div className="space-y-3">
+                    {myUploads.map((item, idx) => (
+                        <div key={idx} className={`p-4 rounded-lg border flex flex-col sm:flex-row justify-between gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
                             <div>
-                                <h4 className={`text-sm font-bold ${isDark ? "text-slate-200" : "text-slate-900"}`}>{item.title}</h4>
-                                <p className="text-xs text-slate-500">
-                                    {item.type} • {item.date} {item.details && `• ${item.details}`}
-                                </p>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-white border text-slate-600"}`}>{item.subjects?.subject_name}</span>
+                                    <span className="text-[10px] text-slate-500">{new Date(item.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <h4 className={`font-semibold text-sm ${isDark ? "text-white" : "text-slate-900"}`}>{item.title}</h4>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
+                                    <CheckCircle size={14} /> Live
+                                </span>
+                                <button onClick={() => window.open(item.file_path, '_blank')} className="p-2 rounded text-blue-500 hover:bg-blue-500/10 transition-colors">
+                                    <LinkIcon size={16} />
+                                </button>
                             </div>
                         </div>
-                        <div className="flex items-center gap-4 justify-between sm:justify-end w-full sm:w-auto">
-                            <span className={`text-[10px] font-bold px-2 py-1 rounded-full border ${item.status === "Published" ? (isDark ? "bg-emerald-900/20 text-emerald-400 border-emerald-900/50" : "bg-emerald-50 text-emerald-700 border-emerald-100") : (isDark ? "bg-amber-900/20 text-amber-400 border-amber-900/50" : "bg-amber-50 text-amber-700 border-amber-100")}`}>
-                                {item.status}
-                            </span>
-                            {item.status === "Pending HOD" && (
-                                <div className="flex flex-col gap-1">
-                                    <button onClick={() => onSimulateHODResponse(true)} className="text-[9px] text-emerald-500 hover:underline">Sim: Approve</button>
-                                    <button onClick={() => onSimulateHODResponse(false)} className="text-[9px] text-red-500 hover:underline">Sim: Reject</button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                ))}
-             </div>
+                    ))}
+                </div>
+            )}
         </div>
       </div>
     </div>

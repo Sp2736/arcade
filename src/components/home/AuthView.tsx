@@ -94,6 +94,15 @@ export default function AuthView({ onAuthSuccess }: AuthViewProps) {
 }
 
 // --- LOGIN FORM ---
+// ADD THIS IMPORT AT THE TOP OF AuthView.tsx if not already there:
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
+
+// --- LOGIN FORM ---
 function LoginForm({ onAuthSuccess }: { onAuthSuccess?: (userData: any) => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -104,7 +113,6 @@ function LoginForm({ onAuthSuccess }: { onAuthSuccess?: (userData: any) => void 
     e.preventDefault();
     setErrorMsg("");
 
-    // Frontend Validations
     if (!isCollegeEmail(email)) {
       return setErrorMsg("Access restricted to official college email addresses only.");
     }
@@ -115,20 +123,30 @@ function LoginForm({ onAuthSuccess }: { onAuthSuccess?: (userData: any) => void 
     setLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }), 
+      // 1. Log in securely via the frontend client so the browser stores the JWT Session
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const text = await res.text();
-      let data;
-      try { data = JSON.parse(text); } 
-      catch { throw new Error("Server returned an invalid response."); }
+      if (authError) throw new Error("Invalid credentials.");
 
-      if (!res.ok) throw new Error(data.error || "Failed to login");
+      // 2. Fetch the user's role and details from your database
+      const { data: userProfile, error: dbError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('auth_id', authData.user.id)
+        .single();
 
-      if (onAuthSuccess) onAuthSuccess(data.user);
+      if (dbError || !userProfile) {
+        throw new Error("Auth successful, but no database profile found.");
+      }
+
+      // 3. Update the last_login timestamp in the database
+      await supabase.from('users').update({ last_login: new Date().toISOString() }).eq('user_id', userProfile.user_id);
+
+      // 4. Pass the user profile to MainLayout to render the dashboard
+      if (onAuthSuccess) onAuthSuccess(userProfile);
 
     } catch (err: any) {
       setErrorMsg(err.message);

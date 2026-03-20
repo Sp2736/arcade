@@ -1,323 +1,590 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import { Search, UploadCloud, Eye, Download, CheckCircle, ShieldCheck, User, Filter, BookOpen, Link as LinkIcon, AlertCircle, Clock, Loader2, XCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import {
+  Search,
+  UploadCloud,
+  Eye,
+  Download,
+  CheckCircle,
+  ShieldCheck,
+  User,
+  Filter,
+  BookOpen,
+  Link as LinkIcon,
+  AlertCircle,
+  Clock,
+  Loader2,
+  XCircle,
+} from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface NotesViewProps {
   isDark: boolean;
-  user: any; // Requires the logged-in user object
+  user: any;
 }
 
-// Keeping static lists until you build the Subjects API endpoint
-const SUBJECTS_LIST = ["All Subjects", "Data Structures", "DBMS", "Operating Systems", "Computer Networks", "Algorithms", "Web Technologies", "Artificial Intelligence", "Software Engineering", "Info Security", "Cloud Computing"];
-const SEMESTERS_LIST = ["All Semesters", "Semester 1", "Semester 2", "Semester 3", "Semester 4", "Semester 5", "Semester 6", "Semester 7", "Semester 8"];
+const SUBJECTS_LIST = [
+  "All Subjects",
+  "Calculus",
+  "Data Structures",
+  "DBMS",
+  "Operating Systems",
+  "Computer Networks",
+  "Algorithms",
+  "Web Technologies",
+  "Artificial Intelligence",
+  "Software Engineering",
+];
+const SEMESTERS_LIST = [
+  "All Semesters",
+  "Semester 1",
+  "Semester 2",
+  "Semester 3",
+  "Semester 4",
+  "Semester 5",
+  "Semester 6",
+  "Semester 7",
+  "Semester 8",
+];
 
 export default function NotesView({ isDark, user }: NotesViewProps) {
   const [activeTab, setActiveTab] = useState<"browse" | "uploads">("browse");
-  
-  // Dynamic State
+
   const [allResources, setAllResources] = useState<any[]>([]);
   const [myUploads, setMyUploads] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
-  // Browse Filter State
   const [selectedSemester, setSelectedSemester] = useState("All Semesters");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Upload Form State
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadDesc, setUploadDesc] = useState("");
-  const [uploadSubject, setUploadSubject] = useState("Operating Systems");
-  const [uploadSemester, setUploadSemester] = useState("Semester 4");
-  const [driveLink, setDriveLink] = useState("");
+  const [uploadData, setUploadData] = useState({
+    title: "",
+    description: "",
+    subject_name: "Data Structures",
+    semester: "Semester 4",
+    file_path: "",
+  });
 
-  // --- 1. FETCH DATA ON LOAD ---
-  useEffect(() => {
-    // Safety Valve: Log the user object to see what we actually have
-    console.log("NotesView User Object:", user);
-
-    if (!user || !user.user_id) {
-      console.warn("Missing user or user_id! Stopping fetch.");
-      setLoading(false); // Stop the spinner so it doesn't hang forever
-      return;
-    }
-
-    const fetchNotes = async () => {
-      try {
-        const res = await fetch(`/api/notes?user_id=${user.user_id}&department=${encodeURIComponent(user.department)}`);
-        const data = await res.json();
-        
-        if (res.ok) {
-          setAllResources(data.vault);
-          setMyUploads(data.myUploads);
-        } else {
-          console.error("API Error:", data.error);
-        }
-      } catch (error) {
-        console.error("Failed to fetch notes", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotes();
-  }, [user]);
-
-  // 2. SUBMIT DATA
-  const handleStudentUpload = async (e: React.FormEvent) => {
-      e.preventDefault();
-      
-      // 1. SAFETY CHECK: Ensure user exists before uploading
-      if (!user || !user.user_id) {
-          alert("Session Error: Missing user identity. Please try logging out and logging back in.");
-          return;
-      }
-
-      setIsSubmitting(true);
-      
-      try {
-        const res = await fetch("/api/notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-             title: uploadTitle,
-             description: uploadDesc,
-             subject_name: uploadSubject,
-             semester: uploadSemester,
-             file_path: driveLink, 
-             user_id: user.user_id, // Safe now!
-             role: user.role
-          }),
-        });
-
-        if (res.ok) {
-            const newNote = await res.json();
-            // Optimistically update the UI
-            setMyUploads([{
-                note_id: newNote.note_id,
-                title: uploadTitle,
-                semester: uploadSemester,
-                status: newNote.status,
-                created_at: newNote.created_at,
-                subjects: { subject_name: uploadSubject }
-            }, ...myUploads]);
-            
-            setUploadTitle(""); setUploadDesc(""); setDriveLink("");
-            alert("Resource submitted! It will appear in the vault once verified by your HOD or Faculty.");
-        } else {
-            alert("Upload failed. Make sure your subject exists in the database.");
-        }
-      } catch (error) {
-          console.error(error);
-      } finally {
-          setIsSubmitting(false);
-      }
+  const getAuthToken = async () => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token;
   };
 
-  const filteredResources = useMemo(() => {
-    return allResources.filter(item => {
-        const itemSubject = item.subjects?.subject_name || "";
-        const matchesSemester = selectedSemester === "All Semesters" || item.semester === selectedSemester;
-        const matchesSubject = selectedSubject === "All Subjects" || itemSubject === selectedSubject;
-        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                              itemSubject.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesSemester && matchesSubject && matchesSearch;
-    });
-  }, [allResources, selectedSemester, selectedSubject, searchQuery]);
+  const fetchNotes = async () => {
+    // 1. Check if user is fully loaded
+    if (!user || !user.user_id) return;
 
-  const textMain = isDark ? "text-white" : "text-zinc-900";
-  const textSub = isDark ? "text-zinc-500" : "text-zinc-500";
-  const inputBg = isDark ? "bg-zinc-900 border-zinc-800 text-white" : "bg-white border-zinc-300 text-zinc-900";
-  const filterBg = isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200";
-  const cardClass = `p-4 md:p-6 rounded-md border shadow-sm ${filterBg}`;
-  const labelClass = `block text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`;
-  const selectClass = `w-full md:w-auto px-3 py-2 rounded-lg border text-sm outline-none cursor-pointer appearance-none transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-300 hover:border-zinc-700" : "bg-white border-zinc-300 text-zinc-700 hover:border-zinc-400"}`;
+    setLoading(true);
+    try {
+      // 2. Safely grab session directly instead of via wrapper function
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-  if (loading) return <div className="flex h-64 items-center justify-center text-blue-500"><Loader2 className="animate-spin w-8 h-8" /></div>;
+      if (sessionError || !session?.access_token) {
+        console.warn("Session not ready yet, pausing fetch...");
+        setLoading(false);
+        return; // Abort cleanly, it will retry
+      }
+
+      const dept = user.department || "Computer Engineering";
+
+      const res = await fetch(
+        `/api/notes?user_id=${user.user_id}&department=${encodeURIComponent(dept)}`,
+        {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        },
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to fetch notes");
+      }
+
+      const data = await res.json();
+      setAllResources(data.vaultData || []);
+      setMyUploads(data.myUploadsData || []);
+    } catch (error: any) {
+      console.error("Error fetching notes:", error.message);
+      setAllResources([]);
+      setMyUploads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // 3. Add a slight 500ms delay to give Supabase time to mount the auth token
+    const timer = setTimeout(() => {
+      fetchNotes();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setErrorMsg("");
+
+    try {
+      const token = await getAuthToken();
+      const payload = {
+        ...uploadData,
+        user_id: user.user_id,
+        role: user.role,
+      };
+
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+
+      // Reset form and refresh list
+      setUploadData({
+        title: "",
+        description: "",
+        subject_name: "Data Structures",
+        semester: "Semester 4",
+        file_path: "",
+      });
+      setActiveTab("uploads"); // Switch to uploads tab to show the pending note
+      fetchNotes();
+    } catch (error: any) {
+      setErrorMsg(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredResources = allResources.filter(res => {
+      // 1. Ensure the resource exists
+      if (!res || !res.title) return false;
+
+      // 2. Search query filter
+      const matchesSearch = 
+        res.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (res.subjects?.subject_name && res.subjects.subject_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      // 3. Semester filter
+      const matchesSem = selectedSemester === "All Semesters" || res.semester === selectedSemester;
+      
+      // 4. Subject filter (Handling the alias 'subjects' vs 'subject')
+      const subjName = res.subjects?.subject_name || "General";
+      const matchesSubj = selectedSubject === "All Subjects" || subjName === selectedSubject;
+      
+      return matchesSearch && matchesSem && matchesSubj;
+  });
 
   return (
-    <div className="flex flex-col space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="flex flex-col h-full animate-fade-in">
+      <div
+        className={`p-4 md:p-6 border-b flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${isDark ? "border-zinc-800 bg-[#0a0a0a]" : "border-zinc-200 bg-white"} rounded-t-2xl`}
+      >
         <div>
-          <h2 className={`text-2xl font-bold ${textMain}`}>Resource Vault</h2>
-          <p className={textSub}>Access verified study materials for {user?.department || "your department"}.</p>
+          <h2 className="text-xl font-bold mb-1">Resource Vault</h2>
+          <p
+            className={`text-sm ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+          >
+            Access verified study materials or contribute your own.
+          </p>
         </div>
-        
-        <div className={`flex p-1 rounded-lg border w-full md:w-auto ${isDark ? "bg-zinc-800 border-zinc-700" : "bg-zinc-100 border-zinc-200"}`}>
-            <button onClick={() => setActiveTab("browse")} className={`flex-1 md:flex-none px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === "browse" ? (isDark ? "bg-zinc-900 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200")}`}>Browse Library</button>
-            <button onClick={() => setActiveTab("uploads")} className={`flex-1 md:flex-none px-4 py-1.5 text-sm font-bold rounded-md transition-all ${activeTab === "uploads" ? (isDark ? "bg-zinc-900 text-white shadow" : "bg-white text-black shadow-sm border border-zinc-200") : (isDark ? "text-zinc-500 hover:text-zinc-300" : "text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200")}`}>My Uploads</button>
+        <div className="flex bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl self-start md:self-auto border dark:border-zinc-800">
+          <button
+            onClick={() => setActiveTab("browse")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "browse" ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}
+          >
+            Browse Vault
+          </button>
+          <button
+            onClick={() => setActiveTab("uploads")}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === "uploads" ? "bg-white dark:bg-zinc-800 shadow-sm text-blue-600 dark:text-blue-400" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"}`}
+          >
+            My Uploads
+          </button>
         </div>
       </div>
 
-      {activeTab === "browse" ? (
-        <>
-            <div className={`p-4 rounded-xl border flex flex-col md:flex-row flex-wrap gap-4 items-center ${filterBg}`}>
-                <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border w-full md:w-64 ${inputBg}`}>
-                    <Search size={16} className="text-zinc-500 shrink-0" />
-                    <input type="text" placeholder="Search topics..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="bg-transparent border-none outline-none text-sm w-full placeholder-zinc-500" />
+      <div
+        className={`flex-1 p-4 md:p-6 overflow-y-auto ${isDark ? "bg-[#050505]" : "bg-slate-50"} rounded-b-2xl border border-t-0 ${isDark ? "border-zinc-800" : "border-zinc-200"}`}
+      >
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-64 text-zinc-500">
+            <Loader2 className="animate-spin mb-4" size={32} />
+            <p>Loading secure vault...</p>
+          </div>
+        ) : activeTab === "browse" ? (
+          <div className="space-y-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                  size={18}
+                />
+                <input
+                  type="text"
+                  placeholder="Search notes, topics, or subjects..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none focus:ring-2 focus:ring-blue-500/20 transition-all ${isDark ? "bg-zinc-900 border-zinc-800 focus:border-blue-500 text-white placeholder-zinc-500" : "bg-white border-zinc-200 focus:border-blue-400 text-zinc-900"}`}
+                />
+              </div>
+              <div className="flex gap-2">
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}
+                >
+                  <Filter size={16} className="text-zinc-400" />
+                  <select
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    className={`bg-transparent outline-none text-sm font-medium ${isDark ? "text-white" : "text-zinc-800"}`}
+                  >
+                    {SEMESTERS_LIST.map((sem) => (
+                      <option
+                        key={sem}
+                        value={sem}
+                        className={isDark ? "bg-zinc-900" : ""}
+                      >
+                        {sem}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="relative w-full md:w-auto">
-                    <select value={selectedSemester} onChange={(e) => setSelectedSemester(e.target.value)} className={selectClass}>
-                        {SEMESTERS_LIST.map(sem => <option key={sem} value={sem}>{sem}</option>)}
-                    </select>
+                <div
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}
+                >
+                  <BookOpen size={16} className="text-zinc-400" />
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    className={`bg-transparent outline-none text-sm font-medium ${isDark ? "text-white" : "text-zinc-800"}`}
+                  >
+                    {SUBJECTS_LIST.map((sub) => (
+                      <option
+                        key={sub}
+                        value={sub}
+                        className={isDark ? "bg-zinc-900" : ""}
+                      >
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-                <div className="relative w-full md:w-auto">
-                    <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} className={selectClass}>
-                        {SUBJECTS_LIST.map(sub => <option key={sub} value={sub}>{sub}</option>)}
-                    </select>
-                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
-                {filteredResources.length > 0 ? (
-                    filteredResources.map((res) => (
-                        <NoteCard key={res.note_id} data={res} isDark={isDark} />
-                    ))
-                ) : (
-                    <div className={`col-span-full py-12 text-center border border-dashed rounded-xl ${isDark ? "border-zinc-800 text-zinc-600" : "border-zinc-300 text-zinc-400"}`}>
-                        <BookOpen size={48} className="mx-auto mb-4 opacity-20" />
-                        <p>No verified resources found. Be the first to upload!</p>
+            {filteredResources.length === 0 ? (
+              <div className="text-center py-16 text-zinc-500">
+                <BookOpen size={48} className="mx-auto mb-4 opacity-20" />
+                <p>No materials found matching your criteria.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredResources.map((data, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/30 hover:shadow-blue-900/10" : "bg-white border-zinc-200 hover:border-blue-300 hover:shadow-blue-100/50"}`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <span
+                        className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${isDark ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}
+                      >
+                        {data.subjects?.subject_name || "General"}
+                      </span>
+                      <span
+                        className={`text-[10px] font-mono px-2 py-1 rounded-md ${isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"}`}
+                      >
+                        {data.semester}
+                      </span>
                     </div>
-                )}
-            </div>
-        </>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={`lg:col-span-1 ${cardClass} h-fit`}>
-                <h3 className={`text-lg font-bold mb-4 ${textMain}`}>Contribute Material</h3>
-                <form onSubmit={handleStudentUpload} className="space-y-4">
-                    <div>
-                        <label className={labelClass}>Material Title</label>
-                        <input type="text" required value={uploadTitle} onChange={(e) => setUploadTitle(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`} />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Description</label>
-                        <textarea required value={uploadDesc} onChange={(e) => setUploadDesc(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm outline-none resize-none h-20 ${inputBg}`} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className={labelClass}>Semester</label>
-                            <select value={uploadSemester} onChange={(e) => setUploadSemester(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}>
-                                {SEMESTERS_LIST.slice(1).map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                    <h3 className="font-bold text-lg mb-2 leading-tight line-clamp-2">
+                      {data.title}
+                    </h3>
+                    <p
+                      className={`text-sm mb-4 line-clamp-2 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+                    >
+                      {data.description || "No description provided."}
+                    </p>
+
+                    <div
+                      className={`flex items-center justify-between py-3 border-t border-b mb-4 ${isDark ? "border-zinc-800" : "border-zinc-100"}`}
+                    >
+                      <div className="flex flex-col">
+                        <span
+                          className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}
+                        >
+                          Uploaded By
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          <User size={12} className="text-blue-500" />
+                          {/* FIX: Now using data.uploader */}
+                          {data.uploader?.full_name || "Student"}
                         </div>
-                        <div>
-                            <label className={labelClass}>Subject</label>
-                            <select value={uploadSubject} onChange={(e) => setUploadSubject(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}>
-                                {SUBJECTS_LIST.slice(1).map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
+                      </div>
+                      <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
+                      <div className="flex flex-col items-end">
+                        <span
+                          className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}
+                        >
+                          Verified By
+                        </span>
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          <ShieldCheck size={12} className="text-emerald-500" />
+                          {/* FIX: Now using data.verifier */}
+                          {data.verifier?.full_name || "Faculty"}
                         </div>
+                      </div>
                     </div>
-                    <div>
-                        <label className={labelClass}>Drive Link</label>
-                        <div className="relative">
-                            <LinkIcon className="absolute left-3 top-2.5 text-blue-500" size={16} />
-                            <input type="url" required value={driveLink} onChange={(e) => setDriveLink(e.target.value)} placeholder="Paste link here..." className={`w-full pl-9 px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`} />
-                        </div>
-                    </div>
-                    
-                    <button disabled={isSubmitting} type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-bold rounded-lg text-sm transition-colors shadow-md shadow-blue-900/20 flex justify-center items-center">
-                        {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit for Verification"}
+
+                    <button
+                      onClick={() => window.open(data.file_path, "_blank")}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}
+                    >
+                      <LinkIcon size={16} /> Open Drive Link
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-1 space-y-4">
+              <div
+                className={`p-5 rounded-2xl border ${isDark ? "bg-zinc-900 border-zinc-800" : "bg-white border-zinc-200"}`}
+              >
+                <h3 className="font-bold text-lg mb-1">Contribute</h3>
+                <p
+                  className={`text-xs mb-6 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}
+                >
+                  Upload your well-structured notes via a Google Drive link. All
+                  materials require faculty verification.
+                </p>
+
+                {errorMsg && (
+                  <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-sm flex items-start gap-2">
+                    <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
+                <form className="space-y-4" onSubmit={handleUploadSubmit}>
+                  <div>
+                    <label
+                      className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                    >
+                      Note Title
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={uploadData.title}
+                      onChange={(e) =>
+                        setUploadData({ ...uploadData, title: e.target.value })
+                      }
+                      placeholder="e.g., Chapter 3: Scheduling"
+                      className={`w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors ${isDark ? "bg-zinc-950 border-zinc-800 focus:border-blue-500 text-white" : "bg-slate-50 border-zinc-200 focus:border-blue-400"}`}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                    >
+                      Description (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={uploadData.description}
+                      onChange={(e) =>
+                        setUploadData({
+                          ...uploadData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Briefly describe what this covers..."
+                      className={`w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors resize-none ${isDark ? "bg-zinc-950 border-zinc-800 focus:border-blue-500 text-white" : "bg-slate-50 border-zinc-200 focus:border-blue-400"}`}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label
+                        className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                      >
+                        Subject
+                      </label>
+                      <select
+                        value={uploadData.subject_name}
+                        onChange={(e) =>
+                          setUploadData({
+                            ...uploadData,
+                            subject_name: e.target.value,
+                          })
+                        }
+                        className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}
+                      >
+                        {SUBJECTS_LIST.filter((s) => s !== "All Subjects").map(
+                          (sub) => (
+                            <option key={sub}>{sub}</option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                      >
+                        Semester
+                      </label>
+                      <select
+                        value={uploadData.semester}
+                        onChange={(e) =>
+                          setUploadData({
+                            ...uploadData,
+                            semester: e.target.value,
+                          })
+                        }
+                        className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}
+                      >
+                        {SEMESTERS_LIST.filter(
+                          (s) => s !== "All Semesters",
+                        ).map((sem) => (
+                          <option key={sem}>{sem}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}
+                    >
+                      Google Drive URL <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      required
+                      value={uploadData.file_path}
+                      onChange={(e) =>
+                        setUploadData({
+                          ...uploadData,
+                          file_path: e.target.value,
+                        })
+                      }
+                      placeholder="https://drive.google.com/file/d/..."
+                      className={`w-full px-3 py-2 text-sm rounded-lg border outline-none transition-colors ${isDark ? "bg-zinc-950 border-zinc-800 focus:border-blue-500 text-white" : "bg-slate-50 border-zinc-200 focus:border-blue-400"}`}
+                    />
+                    <p
+                      className={`text-[10px] mt-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}
+                    >
+                      Make sure access is set to "Anyone with the link can
+                      view".
+                    </p>
+                  </div>
+                  <button
+                    disabled={isSubmitting}
+                    type="submit"
+                    className={`w-full py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${isSubmitting ? "bg-blue-600/50 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-500 shadow-md"} text-white`}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <UploadCloud size={16} />
+                    )}
+                    {isSubmitting ? "Uploading..." : "Submit for Review"}
+                  </button>
                 </form>
+              </div>
             </div>
 
-            <div className={`lg:col-span-2 ${cardClass}`}>
-                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>My Submissions</h3>
-                <div className="space-y-3">
-                    {myUploads.length === 0 ? (
-                        <div className={`p-8 text-center text-xs border border-dashed rounded-lg ${isDark ? "border-zinc-800 text-zinc-600" : "border-zinc-300 text-zinc-400"}`}>
-                            You haven't uploaded any materials yet.
-                        </div>
-                    ) : (
-                        myUploads.map((item: any) => (
-                            <div key={item.note_id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border gap-4 ${isDark ? "bg-zinc-950 border-zinc-800" : "bg-zinc-50 border-zinc-200"}`}>
-                                <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-md ${isDark ? "bg-blue-900/20 text-blue-400" : "bg-blue-50 text-blue-600"}`}><BookOpen size={20} /></div>
-                                    <div>
-                                        <h4 className={`text-sm font-bold ${textMain}`}>{item.title}</h4>
-                                        <p className="text-xs text-zinc-500">{item.semester} • {item.subjects?.subject_name}</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-start sm:items-end">
-                                    <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full border ${
-                                        item.status === 'approved' ? (isDark ? "bg-emerald-900/20 text-emerald-400 border-emerald-900/50" : "bg-emerald-50 text-emerald-700 border-emerald-200") :
-                                        item.status === 'rejected' ? (isDark ? "bg-red-900/20 text-red-400 border-red-900/50" : "bg-red-50 text-red-700 border-red-200") :
-                                        (isDark ? "bg-amber-900/20 text-amber-400 border-amber-900/50" : "bg-amber-50 text-amber-700 border-amber-200")
-                                    }`}>
-                                        {item.status === 'approved' && <CheckCircle size={10} />}
-                                        {item.status === 'rejected' && <XCircle size={10} />}
-                                        {item.status === 'pending' && <Clock size={10} />}
-                                        {item.status.toUpperCase()}
-                                    </span>
-                                    <span className="text-[10px] text-zinc-500 mt-1">{new Date(item.created_at).toLocaleDateString()}</span>
-                                </div>
-                            </div>
-                        ))
-                    )}
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="font-bold text-lg mb-4">My Upload History</h3>
+              {myUploads.length === 0 ? (
+                <div
+                  className={`p-8 rounded-2xl border text-center ${isDark ? "bg-zinc-900 border-zinc-800 text-zinc-500" : "bg-white border-zinc-200 text-zinc-400"}`}
+                >
+                  <UploadCloud size={32} className="mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">
+                    You haven't uploaded any materials yet.
+                  </p>
                 </div>
+              ) : (
+                <div className="space-y-3">
+                  {myUploads.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300"}`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}
+                          >
+                            {item.subjects?.subject_name || "General"}
+                          </span>
+                          <span
+                            className={`text-[10px] ${isDark ? "text-zinc-500" : "text-zinc-400"}`}
+                          >
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm truncate">
+                          {item.title}
+                        </h4>
+                        {item.status === "rejected" &&
+                          item.rejection_reason && (
+                            <p className="text-xs text-red-500 mt-1">
+                              Reason: {item.rejection_reason}
+                            </p>
+                          )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 border
+                                            ${
+                                              item.status === "approved"
+                                                ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                                                : item.status === "pending"
+                                                  ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                                                  : "bg-red-500/10 text-red-500 border-red-500/20"
+                                            }
+                                        `}
+                        >
+                          {item.status === "approved" ? (
+                            <CheckCircle size={14} />
+                          ) : item.status === "pending" ? (
+                            <Clock size={14} />
+                          ) : (
+                            <XCircle size={14} />
+                          )}
+                          <span className="capitalize">{item.status}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-        </div>
-      )}
+          </div>
+        )}
+      </div>
     </div>
   );
-}
-
-// --- NOTE CARD COMPONENT ---
-const NoteCard = ({ data, isDark }: { data: any, isDark: boolean }) => {
-    const uploaderRole = data.users?.role || 'student';
-    const isFaculty = uploaderRole === "faculty" || uploaderRole === "admin";
-    const stampColor = isFaculty ? "bg-blue-600 text-white border-blue-500" : "bg-emerald-500 text-white border-emerald-500";
-    const StampIcon = isFaculty ? ShieldCheck : User;
-    const cardBg = isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/30" : "bg-white border-zinc-200 shadow-sm hover:shadow-md";
-
-    return (
-        <div className={`group flex flex-col p-5 rounded-2xl border transition-all hover:-translate-y-1 ${cardBg}`}>
-            <div className="flex justify-between items-start mb-3">
-                <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-black uppercase tracking-widest border shadow-sm ${stampColor}`}>
-                    <StampIcon size={12} strokeWidth={3} /> {uploaderRole.toUpperCase()}
-                </div>
-                <span className={`text-[10px] font-mono opacity-50 ${isDark ? "text-zinc-400" : "text-zinc-600"}`}>
-                    {data.users?.full_name || 'Unknown Author'}
-                </span>
-            </div>
-
-            <h3 className={`font-bold text-lg mb-1 truncate leading-tight ${isDark ? "text-white" : "text-zinc-900"}`}>{data.title}</h3>
-            <p className={`text-xs mb-4 line-clamp-2 flex-1 ${isDark ? "text-zinc-500" : "text-zinc-500"}`}>{data.description}</p>
-
-            <div className={`pt-4 mt-auto border-t ${isDark ? "border-zinc-800" : "border-zinc-100"}`}>
-                <div className="flex justify-between items-end mb-4">
-                    <div className="flex flex-col">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>{data.semester}</span>
-                        <span className={`text-xs font-bold ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>{data.subjects?.subject_name}</span>
-                    </div>
-
-                    <div className="flex flex-col items-end">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider ${isDark ? "text-zinc-600" : "text-zinc-400"}`}>
-                            {isFaculty ? "Published By" : "Verified By"}
-                        </span>
-                        <div className="flex items-center gap-1">
-                            {isFaculty ? <ShieldCheck size={12} className="text-blue-500" /> : <CheckCircle size={12} className="text-emerald-500" />}
-                            <span className={`text-[10px] ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-                                {data.users?.full_name || 'Admin'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div className={`flex items-center gap-4 mb-4 text-[11px] font-medium ${isDark ? "text-zinc-400" : "text-zinc-500"}`}>
-                    <div className="flex items-center gap-1.5" title="Views"><Eye size={14} /> {data.view_count || 0}</div>
-                    <div className="flex items-center gap-1.5" title="Downloads"><Download size={14} /> {data.download_count || 0}</div>
-                </div>
-
-                <div className="flex gap-2">
-                    <button onClick={() => window.open(data.file_path, '_blank')} className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}>
-                        <LinkIcon size={14} /> Open Drive
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
 }

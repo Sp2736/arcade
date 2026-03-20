@@ -6,9 +6,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password, fullName, collegeId, department, role, adminCode } = body;
     
-    // Security Check for Faculty
-    if (role === 'faculty' && adminCode !== 'ARCADE_ADMIN_2026') {
-         return NextResponse.json({ error: "Invalid Admin Verification Code" }, { status: 403 });
+    // Security Check: Use environment variable instead of hardcoded secret
+    if (role === 'faculty') {
+        const expectedAdminCode = process.env.FACULTY_SECRET;
+        if (!expectedAdminCode || adminCode !== expectedAdminCode) {
+            return NextResponse.json({ error: "Invalid Admin Verification Code" }, { status: 403 });
+        }
     }
 
     const supabase = getServiceSupabase();
@@ -30,7 +33,7 @@ export async function POST(request: Request) {
           auth_id: authData.user.id,
           full_name: fullName,
           college_email: email,
-          password_hash: 'managed_by_supabase', // Required by your NOT NULL constraint
+          password_hash: 'managed_by_supabase',
           college_id: collegeId,
           department: department,
           role: role,
@@ -40,7 +43,6 @@ export async function POST(request: Request) {
       ]);
 
     if (dbError) {
-      // If DB fails, clean up the auth user so we don't get ghost accounts
       await supabase.auth.admin.deleteUser(authData.user.id);
       throw new Error("Database failed: " + dbError.message);
     }

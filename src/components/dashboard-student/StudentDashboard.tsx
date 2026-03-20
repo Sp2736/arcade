@@ -12,7 +12,6 @@ import RoadmapView from "./RoadmapView";
 import SkillNavigator from "./SkillNavigator";
 import ResumeResourcesView from "./ResumeResourcesView";
 import DashboardCursor from "./DashboardCursor"; 
-// Import the new component
 import AlumniNetwork from "./AlumniNetwork";
 
 export const ROADMAP_DATA: any = {
@@ -43,7 +42,7 @@ export const ROADMAP_DATA: any = {
     }
 };
 
-type Notification = { id: number; title: string; desc: string; time: string; type: "info" | "success" | "alert"; };
+type Notification = { notification_id: number; title: string; message: string; created_at: string; type: "info" | "success" | "warning" | "error"; is_read: boolean; };
 
 interface StudentDashboardProps {
   user?: any;
@@ -53,12 +52,12 @@ interface StudentDashboardProps {
 export default function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [currentView, setCurrentView] = useState("overview");
   
-  // Create safe dynamic variables based on the logged-in user
+  // Real dynamic variables mapped directly from the database user object
   const fullName = user?.full_name || "Student Name";
   const firstName = fullName.split(" ")[0];
   const collegeId = user?.college_id?.toUpperCase() || "ID PENDING";
-  const department = user?.department?.toUpperCase() || "DEPARTMENT PENDING";
   const userInitials = firstName.substring(0, 2).toUpperCase();
+  
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
@@ -72,55 +71,67 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
-  const [isNewUser, setIsNewUser] = useState(true); 
 
+  // Fetch real notifications from the database
   useEffect(() => {
-    setNotifications([]);
-    const timers: NodeJS.Timeout[] = [];
+    const fetchNotifications = async () => {
+        if (!user?.user_id) return;
+        try {
+            // Get the session directly from the client to ensure it's fresh
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !session?.access_token) {
+                console.warn("Waiting for session to establish...");
+                return; // Silently abort, don't throw an error, it will retry when user state changes
+            }
 
-    if (isNewUser) {
-        timers.push(setTimeout(() => {
-            addNotification({ title: "Welcome to ARCADE!", desc: "Your personalized career ecosystem is ready.", type: "success", time: "Now" });
-            setIsNewUser(false); 
-        }, 500));
+            const res = await fetch(`/api/notifications?user_id=${user.user_id}`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data.notifications || []);
+            } else {
+                console.warn(`Notifications API returned status: ${res.status}`);
+            }
+        } catch (error) {
+            // Changed to a silent warning instead of an error so it doesn't crash the console stack
+            console.warn("Could not fetch notifications at this time."); 
+        }
+    };
+    
+    // Slight delay ensures Supabase has time to mount the auth token in local browser storage
+    const timer = setTimeout(() => {
+        fetchNotifications();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  const markAsRead = async (id: number) => {
+    try {
+        await fetch('/api/notifications', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notification_id: id })
+        });
+        setNotifications(prev => prev.filter(n => n.notification_id !== id));
+    } catch (error) {
+        console.error("Failed to clear notification:", error);
     }
-    timers.push(setTimeout(() => {
-        addNotification({ title: "New Material Verified", desc: "Topic: 'Process Scheduling' (OS) uploaded by Rohan Das.", type: "info", time: "2m ago" });
-    }, 4000));
-
-    return () => timers.forEach((t) => clearTimeout(t));
-  }, []);
-
-  useEffect(() => {
-      const timer = setTimeout(() => {
-          addNotification({
-              title: "Material Approved",
-              desc: "Prof. J. Doe verified your 'Data Structures' notes.",
-              time: "Now",
-              type: "success"
-          });
-      }, 5000);
-      return () => clearTimeout(timer);
-  }, []);
-
-  const addNotification = (notif: Omit<Notification, "id">) => {
-    setNotifications(prev => [{ id: Date.now() + Math.random(), ...notif }, ...prev]);
-  };
-  const removeNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const borderMain = isDarkMode ? "border-zinc-800" : "border-zinc-200";
-  
   const bgMain = isDarkMode ? "bg-[#050505]" : "bg-[#f8fafc]"; 
   const panelBg = isDarkMode ? "bg-[#09090b] border-zinc-800" : "bg-white border-zinc-200"; 
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
   return (
     <div className={`flex h-screen w-full font-sans overflow-hidden transition-colors duration-300 ${bgMain} ${textMain}`}>
-      
       <DashboardCursor />
-
       <div 
         className="absolute inset-0 pointer-events-none z-0" 
         style={{
@@ -136,18 +147,14 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
             activeView={currentView} 
             onNavigate={setCurrentView} 
             isDarkMode={isDarkMode}
-            studentName="Swayam Patel"
+            studentName={firstName}
             mobileOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
         />
       </div>
 
       <div className="flex-1 flex flex-col h-full relative z-20 overflow-hidden">
-        
-        {/* FIXED HEADER: Removed backdrop-blur-md from the main container class */}
         <header className={`h-16 md:h-20 border-b flex items-center justify-between px-4 md:px-8 relative z-50 transition-colors duration-300 ${borderMain}`}>
-            
-            {/* The blur is now placed on an absolute background layer so it doesn't trap fixed elements! */}
             <div className={`absolute inset-0 -z-10 backdrop-blur-md transition-colors duration-300 ${isDarkMode ? "bg-[#050505]/80" : "bg-white/80"}`} />
 
             <div className="flex items-center gap-3 md:gap-4">
@@ -156,9 +163,6 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     <h1 className="text-lg md:text-xl font-bold capitalize truncate max-w-[150px] md:max-w-none">
                         {currentView.replace("-", " ")}
                     </h1>
-                    <p className={`hidden md:block text-xs font-mono ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
-                        SEM 4 // COMPUTER ENGINEERING
-                    </p>
                 </div>
             </div>
 
@@ -173,37 +177,26 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                         className={`relative p-2 transition-colors ${showNotifPanel ? "text-blue-500" : "text-zinc-400"}`}
                     >
                         <Bell size={20} />
-                        {notifications.length > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />}
+                        {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />}
                     </button>
                     
                     <AnimatePresence>
                         {showNotifPanel && (
                             <>
-                                {/* Mobile Backdrop Overlay - Will now cover the entire screen properly */}
                                 <motion.div 
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="md:hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm"
                                     onClick={() => setShowNotifPanel(false)}
                                 />
-
-                                {/* Notification Panel */}
                                 <motion.div 
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }} 
                                     animate={{ opacity: 1, y: 0, scale: 1 }} 
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }} 
-                                    className={`
-                                        fixed md:absolute 
-                                        top-20 md:top-14 
-                                        left-4 right-4 md:left-auto md:right-0 
-                                        w-auto md:w-96 
-                                        rounded-2xl border shadow-2xl overflow-hidden z-[100] 
-                                        ${panelBg}
-                                    `}
+                                    className={`fixed md:absolute top-20 md:top-14 left-4 right-4 md:left-auto md:right-0 w-auto md:w-96 rounded-2xl border shadow-2xl overflow-hidden z-[100] ${panelBg}`}
                                 >
                                     <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? "border-zinc-800 bg-zinc-900" : "border-zinc-100 bg-white"}`}>
                                         <h3 className={`font-bold text-sm ${textMain}`}>Notifications</h3>
                                         <div className="flex gap-3 items-center">
-                                            <button onClick={() => setNotifications([])} className="text-[10px] text-blue-500 hover:underline">Clear</button>
                                             <button onClick={() => setShowNotifPanel(false)} className={`p-1 rounded transition-colors ${isDarkMode ? "hover:bg-zinc-800 text-zinc-400" : "hover:bg-zinc-200 text-zinc-600"}`}><X size={14}/></button>
                                         </div>
                                     </div>
@@ -213,16 +206,16 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                                             <div className={`p-8 text-center text-xs py-12 ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>No new notifications</div>
                                         ) : (
                                             notifications.map(n => (
-                                                <div key={n.id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-zinc-800 hover:bg-zinc-800/50" : "border-zinc-100 hover:bg-zinc-50"}`}>
-                                                    <button onClick={() => removeNotification(n.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
+                                                <div key={n.notification_id} className={`p-4 border-b relative group transition-colors ${isDarkMode ? "border-zinc-800 hover:bg-zinc-800/50" : "border-zinc-100 hover:bg-zinc-50"}`}>
+                                                    <button onClick={() => markAsRead(n.notification_id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"><X size={12}/></button>
                                                     <div className="flex gap-3">
-                                                        <div className={`mt-0.5 shrink-0 ${n.type === "success" ? "text-green-500" : n.type === "alert" ? "text-amber-500" : "text-blue-500"}`}>
-                                                            {n.type === "success" ? <CheckCircle size={16} /> : n.type === "alert" ? <AlertTriangle size={16} /> : <Info size={16} />}
+                                                        <div className={`mt-0.5 shrink-0 ${n.type === "success" ? "text-green-500" : n.type === "error" ? "text-red-500" : n.type === "warning" ? "text-amber-500" : "text-blue-500"}`}>
+                                                            {n.type === "success" ? <CheckCircle size={16} /> : n.type === "error" || n.type === "warning" ? <AlertTriangle size={16} /> : <Info size={16} />}
                                                         </div>
                                                         <div className="min-w-0 pr-4">
                                                             <h4 className={`text-sm font-bold leading-tight mb-1 truncate ${textMain}`}>{n.title}</h4>
-                                                            <p className={`text-xs leading-relaxed break-words ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.desc}</p>
-                                                            <span className="text-[10px] opacity-40 mt-1.5 block">{n.time}</span>
+                                                            <p className={`text-xs leading-relaxed break-words ${isDarkMode ? "text-zinc-400" : "text-zinc-500"}`}>{n.message}</p>
+                                                            <span className="text-[10px] opacity-40 mt-1.5 block">{new Date(n.created_at).toLocaleDateString()}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -235,13 +228,14 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     </AnimatePresence>
                 </div>
 
-                <button onClick={() => setCurrentView("profile")} className="flex items-center gap-3 pl-3 md:pl-6 border-l border-white/10">
+                <button onClick={() => setCurrentView("profile")} className="flex items-center gap-3 pl-3 md:pl-6 border-l border-white/10 group">
                     <div className="hidden md:block text-right">
-                        <p className="text-sm font-bold">Swayam</p>
-                        <p className="text-[10px] text-blue-500">24DCS088</p>
+                        <p className="text-sm font-bold group-hover:text-blue-500 transition-colors">{firstName}</p>
+                        <p className="text-[10px] text-blue-500">{collegeId}</p>
                     </div>
-                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden border shadow-sm">
-                         <img src="/swayam.jpeg" alt="Swayam" className="w-full h-full object-cover" />
+                    {/* Replaced hardcoded image with dynamic initials avatar */}
+                    <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-600 text-white font-bold border shadow-sm">
+                         {userInitials}
                     </div>
                 </button>
             </div>
@@ -254,19 +248,18 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3, ease: "easeOut" }}
                     className="h-full max-w-7xl mx-auto"
                 >
+                    {/* Notice we are passing the ACTUAL user object down to the children now */}
                     {currentView === "overview" && <Overview isDark={isDarkMode} targetRole={targetRole} />}
-                    {currentView === "profile" && <ProfileView isDarkMode={isDarkMode} targetRole={targetRole} onRoleChange={(role) => { setTargetRole(role); setCheckedSkills([]); }} isUnlocked={isRoleUnlocked} />}
-                    {currentView === "roadmap" && <RoadmapView isDark={isDarkMode} targetRole={targetRole} checkedSkills={checkedSkills} setCheckedSkills={setCheckedSkills} roleData={currentRoleData} />}
+                    {currentView === "profile" && <ProfileView isDarkMode={isDarkMode} targetRole={targetRole} onRoleChange={(role) => { setTargetRole(role); setCheckedSkills([]); }} isUnlocked={isRoleUnlocked} user={user} />}
+                    {currentView === "roadmap" && <RoadmapView isDark={isDarkMode} targetRole={targetRole} checkedSkills={checkedSkills} setCheckedSkills={setCheckedSkills} roleData={currentRoleData} user={user} />}
                     {currentView === "notes" && <NotesView isDark={isDarkMode} user={user} />}
                     {currentView === "skills" && <SkillNavigator isDark={isDarkMode} />}
                     {currentView === "resumes" && <ResumeResourcesView isDark={isDarkMode} initialTab="resumes" />}
                     {currentView === "resources" && <ResumeResourcesView isDark={isDarkMode} initialTab="resources" />}
-                    {/* NEW: Alumni Network View */}
                     {currentView === "alumni" && <AlumniNetwork isDark={isDarkMode} />}
                 </motion.div>
             </AnimatePresence>
         </div>
-
       </div>
     </div>
   );
