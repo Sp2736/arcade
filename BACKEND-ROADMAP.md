@@ -34,13 +34,13 @@
 
 ## Phase 5: Student Profile & Roadmap Progress
 *Goal: Save the student's target role and track their skill progression.*
-- [ ] **Backend:** Create `/api/profile` (GET/PUT) to update the `users` table (`bio`, `phone_number`, `target_role`).
-- [ ] **Backend:** Create `/api/progress` (GET/POST) to read/write the `completed_nodes` JSON array in the `student_progress` table.
-- [ ] **Frontend:** Wire up `StudentProfile.tsx` to load and save bio/role changes.
-- [ ] **Frontend:** Wire up the Roadmap Nodes (checkboxes/skills) to fire a PUT request to `/api/progress` when a student checks off a skill.
+- [x] **Backend:** Create `/api/profile` (GET/PUT) to update the `users` table (`bio`, `phone_number`, `target_role`).
+- [x] **Backend:** Create `/api/progress` (GET/POST) to read/write the `completed_nodes` JSON array in the `student_progress` table.
+- [x] **Frontend:** Wire up `StudentProfile.tsx` to load and save bio/role changes.
+- [x] **Frontend:** Wire up the Roadmap Nodes (checkboxes/skills) to fire a PUT request to `/api/progress` when a student checks off a skill.
 
 ## Phase 6: Admin Audit & Analytics (The Command Center)
 *Goal: Give the HOD visibility over system actions.*
-- [ ] **Backend:** Inject Audit Logic. Update the `PUT` routes (Approving notes/resumes) to also `INSERT INTO audit_logs` (e.g., "Prof. Patel approved Note #45").
-- [ ] **Backend:** Create `/api/admin/audit` (GET) to fetch the latest logs.
-- [ ] **Frontend:** Build an `AuditLogs.tsx` view inside the Faculty Dashboard to display this timeline.
+- [x] **Backend:** Inject Audit Logic. Update the `PUT` routes (Approving notes/resumes) to also `INSERT INTO audit_logs` (e.g., "Prof. Patel approved Note #45").
+- [x] **Backend:** Create `/api/admin/audit` (GET) to fetch the latest logs.
+- [x] **Frontend:** Build an `AuditLogs.tsx` view inside the Faculty Dashboard to display this timeline.

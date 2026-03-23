@@ -1,17 +1,20 @@
+// src/components/dashboard-faculty/FacultyDashboard.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Sun, Moon, LogOut, Menu, Bell, CheckCircle, X, Info, AlertTriangle, UploadCloud } from "lucide-react";
+import { User, Sun, Moon, LogOut, Menu, Bell, CheckCircle, X, Info, AlertTriangle, UploadCloud, ShieldAlert } from "lucide-react";
 
 import FacultyProfile from "./FacultyProfile";
 import FacultyVerification from "./FacultyVerification";
 import FacultyUploads from "./FacultyUploads";
+import AuditLogs from "./AuditLogs";
 
 const MODULES = [
   { id: "profile", label: "My Profile", icon: User },
   { id: "uploads", label: "My Uploads", icon: UploadCloud },
   { id: "verification", label: "Verification Console", icon: CheckCircle },
+  { id: "audit", label: "Audit Logs", icon: ShieldAlert },
 ];
 
 type Notification = { notification_id: number; title: string; message: string; created_at: string; type: "info" | "success" | "warning" | "error"; is_read: boolean; };
@@ -231,6 +234,11 @@ export default function FacultyDashboard({ user, onLogout }: FacultyProps) {
               {currentView === "uploads" && (
                 <motion.div key="uploads" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
                   <FacultyUploads isDark={isDarkMode} user={user} />
+                </motion.div>
+              )}
+              {currentView === "audit" && (
+                <motion.div key="audit" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.2 }}>
+                  <AuditLogs isDark={isDarkMode} user={user} />
                 </motion.div>
               )}
             </AnimatePresence>

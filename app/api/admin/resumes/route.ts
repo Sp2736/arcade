@@ -8,7 +8,6 @@ export async function GET(request: Request) {
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         
-        // Fetch all pending resumes
         const { data: pendingResumes, error: dbError } = await supabase
             .from('resume_samples')
             .select(`
@@ -39,7 +38,7 @@ export async function PUT(request: Request) {
 
         const { data: userProfile, error: profileError } = await supabase
             .from('users')
-            .select('role')
+            .select('user_id, role')
             .eq('auth_id', user.id)
             .single();
         
@@ -78,6 +77,13 @@ export async function PUT(request: Request) {
             title: notificationTitle,
             message: notificationMessage,
             type: status === 'approved' ? 'success' : 'error'
+        }]);
+
+        // 3. [PHASE 6] INJECT AUDIT LOG
+        await supabase.from('audit_logs').insert([{
+            user_id: userProfile.user_id,
+            action: status === 'approved' ? 'RESUME_APPROVED' : 'RESUME_REJECTED',
+            details: { resume_id: resume_id, title: updatedResume.title, rejection_reason }
         }]);
 
         return NextResponse.json({ message: `Resume ${status} successfully` }, { status: 200 });

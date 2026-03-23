@@ -1,3 +1,4 @@
+// app/api/notes/verify/route.ts
 import { NextResponse } from 'next/server';
 import { getServiceSupabase } from '@/src/lib/supabase';
 import { z } from 'zod';
@@ -75,6 +76,13 @@ export async function PATCH(request: Request) {
       title: notificationTitle,
       message: notificationMessage,
       type: status === 'approved' ? 'success' : 'error'
+    }]);
+
+    // 4. [PHASE 6] INJECT AUDIT LOG
+    await supabase.from('audit_logs').insert([{
+      user_id: verified_by,
+      action: status === 'approved' ? 'NOTE_APPROVED' : 'NOTE_REJECTED',
+      details: { note_id: note_id, title: noteData.title, rejection_reason }
     }]);
 
     return NextResponse.json({ message: `Note ${status} successfully`, data: updatedNote }, { status: 200 });
