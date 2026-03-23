@@ -11,8 +11,8 @@
 
 ## Phase 2: System Catalogs & Dynamic Dropdowns
 *Goal: Replace hardcoded arrays (like Subjects) with real database values.*
-- [ ] **Backend:** Create `/api/subjects` (GET) to fetch subjects filtered by department/semester.
-- [ ] **Frontend:** Update `NotesView.tsx` to fetch subjects from the API instead of using the static `SUBJECTS_LIST`.
+- [x] **Backend:** Create `/api/subjects` (GET) to fetch subjects filtered by department/semester.
+- [x] **Frontend:** Update `NotesView.tsx` to fetch subjects from the API instead of using the static `SUBJECTS_LIST`.
 
 ## Phase 3: The Resource Vault (Notes & Study Materials)
 *Goal: Allow students to upload pending notes, and faculty to approve and publish them.*

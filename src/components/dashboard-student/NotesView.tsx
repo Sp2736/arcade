@@ -28,18 +28,6 @@ interface NotesViewProps {
   user: any;
 }
 
-const SUBJECTS_LIST = [
-  "All Subjects",
-  "Calculus",
-  "Data Structures",
-  "DBMS",
-  "Operating Systems",
-  "Computer Networks",
-  "Algorithms",
-  "Web Technologies",
-  "Artificial Intelligence",
-  "Software Engineering",
-];
 const SEMESTERS_LIST = [
   "All Semesters",
   "Semester 1",
@@ -65,10 +53,12 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [dynamicSubjects, setDynamicSubjects] = useState<string[]>(["All Subjects"]);
+
   const [uploadData, setUploadData] = useState({
     title: "",
     description: "",
-    subject_name: "Data Structures",
+    subject_name: "Select Subject",
     semester: "Semester 4",
     file_path: "",
   });
@@ -124,10 +114,33 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
     }
   };
 
+  const fetchSubjects = async () => {
+    if (!user || !user.department) return;
+    try {
+      const res = await fetch(`/api/subjects?department=${encodeURIComponent(user.department)}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Extract names, remove duplicates, and sort
+        const subjectNames = data.subjects.map((s: any) => s.subject_name);
+        const uniqueSubjects = Array.from(new Set(subjectNames)).sort() as string[];
+        
+        setDynamicSubjects(["All Subjects", ...uniqueSubjects]);
+
+        // Auto-select the first valid subject for the upload form to prevent empty submissions
+        if (uniqueSubjects.length > 0) {
+          setUploadData((prev) => ({ ...prev, subject_name: uniqueSubjects[0] }));
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch dynamic subjects:", error);
+    }
+  };
+
   useEffect(() => {
-    // 3. Add a slight 500ms delay to give Supabase time to mount the auth token
+    // Add a slight 500ms delay to give Supabase time to mount the auth token
     const timer = setTimeout(() => {
       fetchNotes();
+      fetchSubjects();
     }, 500);
 
     return () => clearTimeout(timer);
@@ -163,7 +176,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       setUploadData({
         title: "",
         description: "",
-        subject_name: "Data Structures",
+        subject_name: dynamicSubjects.length > 1 ? dynamicSubjects[1] : "", // Reset to first valid subject
         semester: "Semester 4",
         file_path: "",
       });
@@ -188,7 +201,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       // 3. Semester filter
       const matchesSem = selectedSemester === "All Semesters" || res.semester === selectedSemester;
       
-      // 4. Subject filter (Handling the alias 'subjects' vs 'subject')
+      // 4. Subject filter
       const subjName = res.subjects?.subject_name || "General";
       const matchesSubj = selectedSubject === "All Subjects" || subjName === selectedSubject;
       
@@ -278,7 +291,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                     onChange={(e) => setSelectedSubject(e.target.value)}
                     className={`bg-transparent outline-none text-sm font-medium ${isDark ? "text-white" : "text-zinc-800"}`}
                   >
-                    {SUBJECTS_LIST.map((sub) => (
+                    {dynamicSubjects.map((sub) => (
                       <option
                         key={sub}
                         value={sub}
@@ -336,7 +349,6 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                         </span>
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <User size={12} className="text-blue-500" />
-                          {/* FIX: Now using data.uploader */}
                           {data.uploader?.full_name || "Student"}
                         </div>
                       </div>
@@ -349,7 +361,6 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                         </span>
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <ShieldCheck size={12} className="text-emerald-500" />
-                          {/* FIX: Now using data.verifier */}
                           {data.verifier?.full_name || "Faculty"}
                         </div>
                       </div>
@@ -441,7 +452,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                         }
                         className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}
                       >
-                        {SUBJECTS_LIST.filter((s) => s !== "All Subjects").map(
+                        {dynamicSubjects.filter((s) => s !== "All Subjects").map(
                           (sub) => (
                             <option key={sub}>{sub}</option>
                           ),
