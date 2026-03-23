@@ -5,9 +5,9 @@
 - [x] **Database:** Implement the normalized PostgreSQL schema (users, subjects, notes, etc.).
 - [x] **Backend:** Update `/api/auth/signup` to insert full profiles into `public.users`.
 - [x] **Backend:** Update `/api/auth/login` to fetch profile, update `last_login`, and return `user_id`.
-- [ ] **Frontend:** Ensure `MainLayout.tsx` securely holds the session state.
-- [ ] **Frontend:** Pass the dynamic `user` object from `MainLayout.tsx` down to `StudentDashboard.tsx` and `FacultyDashboard.tsx`.
-- [ ] **Frontend:** Map `user.full_name`, `user.college_id`, and `user.department` to dashboard headers/sidebars.
+- [x] **Frontend:** Ensure `MainLayout.tsx` securely holds the session state.
+- [x] **Frontend:** Pass the dynamic `user` object from `MainLayout.tsx` down to `StudentDashboard.tsx` and `FacultyDashboard.tsx`.
+- [x] **Frontend:** Map `user.full_name`, `user.college_id`, and `user.department` to dashboard headers/sidebars.
 
 ## Phase 2: System Catalogs & Dynamic Dropdowns
 *Goal: Replace hardcoded arrays (like Subjects) with real database values.*
