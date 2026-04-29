@@ -44,23 +44,26 @@ export async function POST(request: Request) {
         const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: "Invalid session" }, { status: 403 });
 
-        const { data: profile } = await supabase.from('users').select('user_id').eq('auth_id', user.id).single();
+        const { data: profile } = await supabase.from('users').select('user_id, role').eq('auth_id', user.id).single();
 
         const rawBody = await request.json();
         const validation = ResumeSchema.safeParse(rawBody);
         if (!validation.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
         const { title, domain, experience_level, file_path } = validation.data;
+        
+        // Auto-approve if the uploader is a faculty member or HOD
+        const isStaff = profile.role === 'faculty' || profile.role === 'hod';
 
         const { data, error } = await supabase.from('resume_samples').insert([{
             title, domain, experience_level, file_path,
             uploaded_by: profile.user_id,
-            status: 'pending_hod' 
+            status: isStaff ? 'approved' : 'pending_hod' 
         }]);
 
         if (error) throw new Error(error.message);
 
-        return NextResponse.json({ message: "Resume submitted for verification successfully" }, { status: 201 });
+        return NextResponse.json({ message: "Resume processed successfully" }, { status: 201 });
     } catch (error: any) {
         return NextResponse.json({ error: "Failed to submit resume" }, { status: 500 });
     }

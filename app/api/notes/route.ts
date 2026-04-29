@@ -7,7 +7,8 @@ const NoteSchema = z.object({
   description: z.string().optional(),
   subject_name: z.string(),
   semester: z.string(),
-  file_path: z.string().url()
+  file_path: z.string().url(),
+  assigned_faculty: z.string().optional().nullable()
 });
 
 export async function GET(request: Request) {
@@ -26,11 +27,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const department = searchParams.get('department');
 
+    // Relaxed inner join to ensure all approved notes surface correctly
     const { data: vaultData, error: vaultError } = await supabase
       .from('notes')
-      .select('note_id, title, description, semester, file_path, view_count, download_count, created_at, uploader:users!notes_uploaded_by_fkey (full_name, role), verifier:users!notes_verified_by_fkey (full_name), subjects!inner (subject_name, department)')
+      .select('note_id, title, description, semester, file_path, view_count, download_count, created_at, uploader:users!notes_uploaded_by_fkey (full_name, role), verifier:users!notes_verified_by_fkey (full_name), subjects (subject_name, department)')
       .eq('status', 'approved')
-      .eq('subjects.department', department)
       .order('created_at', { ascending: false });
 
     if (vaultError) throw new Error("Vault error");
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: "Invalid session" }, { status: 403 });
 
-    const { data: profile } = await supabase.from('users').select('user_id, role').eq('auth_id', user.id).single();
+    const { data: profile } = await supabase.from('users').select('user_id, role, full_name').eq('auth_id', user.id).single();
     if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
     const rawBody = await request.json();
@@ -71,7 +72,7 @@ export async function POST(request: Request) {
     const { data: subjectData } = await supabase.from('subjects').select('subject_id').eq('subject_name', body.subject_name).single();
     const subjectId = subjectData ? subjectData.subject_id : null;
 
-    const isFaculty = profile.role === 'faculty';
+    const isFaculty = profile.role === 'faculty' || profile.role === 'hod';
 
     const { data, error } = await supabase.from('notes').insert([{
       title: body.title,
@@ -85,6 +86,16 @@ export async function POST(request: Request) {
     }]).select().single();
 
     if (error) throw new Error(error.message);
+
+    // If a student selected a faculty, send them a direct notification
+    if (body.assigned_faculty && !isFaculty) {
+        await supabase.from('notifications').insert([{
+            user_id: body.assigned_faculty,
+            title: "Material Pending Review",
+            message: `${profile.full_name} has uploaded a new note "${body.title}" and requested your verification.`,
+            type: "info"
+        }]);
+    }
 
     return NextResponse.json({ message: "Success", data }, { status: 200 });
   } catch (error: any) {
