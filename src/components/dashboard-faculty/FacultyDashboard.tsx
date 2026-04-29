@@ -9,6 +9,8 @@ import FacultyProfile from "./FacultyProfile";
 import FacultyVerification from "./FacultyVerification";
 import FacultyUploads from "./FacultyUploads";
 import AuditLogs from "./AuditLogs";
+import HODResumeApproval from "./HODResumeApproval";
+import FacultyResumeUpload from "./FacultyResumeUpload";
 
 const MODULES = [
   { id: "profile", label: "My Profile", icon: User },

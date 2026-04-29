@@ -6,7 +6,6 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password, fullName, collegeId, department, role, adminCode } = body;
     
-    // Security Check: Use environment variable instead of hardcoded secret
     if (role === 'faculty') {
         const expectedAdminCode = process.env.FACULTY_SECRET;
         if (!expectedAdminCode || adminCode !== expectedAdminCode) {
@@ -16,16 +15,16 @@ export async function POST(request: Request) {
 
     const supabase = getServiceSupabase();
 
-    // 1. Create the user in Supabase Auth System
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true 
     });
 
-    if (authError) throw new Error(authError.message);
+    if (authError) {
+        return NextResponse.json({ error: "Failed to create account. Please ensure your email is valid and not already registered." }, { status: 400 });
+    }
 
-    // 2. Link the Auth ID to your new Database Table
     const { error: dbError } = await supabase
       .from('users')
       .insert([
@@ -43,13 +42,17 @@ export async function POST(request: Request) {
       ]);
 
     if (dbError) {
-      await supabase.auth.admin.deleteUser(authData.user.id);
-      throw new Error("Database failed: " + dbError.message);
+      try {
+        await supabase.auth.admin.deleteUser(authData.user.id);
+      } catch (cleanupError) {
+        console.error("CRITICAL: Failed to clean up orphaned auth user:", authData.user.id);
+      }
+      return NextResponse.json({ error: "Registration failed due to a system error. Please try again later." }, { status: 500 });
     }
 
     return NextResponse.json({ message: "Account created successfully" }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "An unexpected system error occurred." }, { status: 500 });
   }
 }

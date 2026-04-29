@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, MessageCircle, Loader2 } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
 import { Sidebar, MobileMenu, ViewState } from "./Navigation";
 import AboutPortal from "./AboutPortal";
@@ -13,9 +14,13 @@ import FAQSidebar from "./FAQSidebar";
 import BackgroundMeteors from "./BackgroundMeteors";
 import MeteorCursor from "./MeteorCursor";
 
-// Dashboard Imports
 import StudentDashboard from "../dashboard-student/StudentDashboard";
 import FacultyDashboard from "../dashboard-faculty/FacultyDashboard";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+);
 
 export default function MainLayout() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
@@ -25,16 +30,60 @@ export default function MainLayout() {
   const [isFAQOpen, setIsFAQOpen] = useState(false);
 
   useEffect(() => {
-    // On load, check if we have a user saved in the browser
-    const savedUser = localStorage.getItem("arcade-user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
+    const initAuth = async () => {
+      const savedUser = localStorage.getItem("arcade-user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (e) {
+          localStorage.removeItem("arcade-user");
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("*")
+          .eq("auth_id", session.user.id)
+          .single();
+          
+        if (profile) {
+          setUser(profile);
+          localStorage.setItem("arcade-user", JSON.stringify(profile));
+        }
+      } else {
+        setUser(null);
         localStorage.removeItem("arcade-user");
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("*")
+          .eq("auth_id", session.user.id)
+          .single();
+          
+        if (profile) {
+          setUser(profile);
+          localStorage.setItem("arcade-user", JSON.stringify(profile));
+        }
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        localStorage.removeItem("arcade-user");
+        setCurrentView("home");
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleAuthSuccess = (userData: any) => {
@@ -42,14 +91,14 @@ export default function MainLayout() {
     setUser(userData);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem("arcade-user");
     setUser(null);
     setCurrentView("home");
-    window.location.reload(); // Hard reset to clear all states
+    window.location.reload(); 
   };
 
-  // 1. Initial Loading State
   if (loading) {
     return (
       <div className="h-screen w-full bg-[#050505] flex items-center justify-center">
@@ -58,16 +107,14 @@ export default function MainLayout() {
     );
   }
 
-  // 2. Authenticated View (Student or Faculty)
   if (user) {
     return user.role === "faculty" ? (
-      <FacultyDashboard user={user} onLogout={handleLogout} /> // ADDED user={user}
+      <FacultyDashboard user={user} onLogout={handleLogout} /> 
     ) : (
-      <StudentDashboard user={user} onLogout={handleLogout} /> // ADDED user={user}
+      <StudentDashboard user={user} onLogout={handleLogout} /> 
     );
   }
 
-  // 3. Public Visitor View
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white font-sans overflow-hidden relative">
       <BackgroundMeteors />

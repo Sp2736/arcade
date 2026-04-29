@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, Sun, Moon, X, Info, CheckCircle, Menu, AlertTriangle } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 
 import StudentSidebar from "./StudentSidebar";
 import ProfileView from "./ProfileView";
@@ -13,6 +14,11 @@ import SkillNavigator from "./SkillNavigator";
 import ResumeResourcesView from "./ResumeResourcesView";
 import DashboardCursor from "./DashboardCursor"; 
 import AlumniNetwork from "./AlumniNetwork";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+);
 
 export const ROADMAP_DATA: any = {
     "Frontend Developer": {
@@ -52,7 +58,6 @@ interface StudentDashboardProps {
 export default function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
   const [currentView, setCurrentView] = useState("overview");
   
-  // Real dynamic variables mapped directly from the database user object
   const fullName = user?.full_name || "Student Name";
   const firstName = fullName.split(" ")[0];
   const collegeId = user?.college_id?.toUpperCase() || "ID PENDING";
@@ -63,6 +68,7 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
   
   const [targetRole, setTargetRole] = useState("Frontend Developer"); 
   const [checkedSkills, setCheckedSkills] = useState<string[]>([]);
+  const [progressLoaded, setProgressLoaded] = useState(false);
 
   const currentRoleData = ROADMAP_DATA[targetRole] || ROADMAP_DATA["Frontend Developer"];
   const mandatoryDone = currentRoleData.mandatory.every((s: string) => checkedSkills.includes(s));
@@ -72,18 +78,12 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
 
-  // Fetch real notifications from the database
   useEffect(() => {
     const fetchNotifications = async () => {
         if (!user?.user_id) return;
         try {
-            // Get the session directly from the client to ensure it's fresh
             const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            
-            if (sessionError || !session?.access_token) {
-                console.warn("Waiting for session to establish...");
-                return; // Silently abort, don't throw an error, it will retry when user state changes
-            }
+            if (sessionError || !session?.access_token) return;
 
             const res = await fetch(`/api/notifications?user_id=${user.user_id}`, {
                 headers: { 'Authorization': `Bearer ${session.access_token}` }
@@ -92,22 +92,73 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
             if (res.ok) {
                 const data = await res.json();
                 setNotifications(data.notifications || []);
-            } else {
-                console.warn(`Notifications API returned status: ${res.status}`);
             }
         } catch (error) {
-            // Changed to a silent warning instead of an error so it doesn't crash the console stack
             console.warn("Could not fetch notifications at this time."); 
         }
     };
     
-    // Slight delay ensures Supabase has time to mount the auth token in local browser storage
-    const timer = setTimeout(() => {
-        fetchNotifications();
-    }, 500);
-    
+    const timer = setTimeout(() => fetchNotifications(), 500);
     return () => clearTimeout(timer);
   }, [user]);
+
+  useEffect(() => {
+    const fetchProgress = async () => {
+        if (!user?.user_id) return;
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) return;
+            
+            const res = await fetch(`/api/progress?student_id=${user.user_id}`, {
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+            
+            if (res.ok) {
+                const data = await res.json();
+                if (data.progress) {
+                    if (data.progress.target_role) setTargetRole(data.progress.target_role);
+                    if (data.progress.completed_nodes) setCheckedSkills(data.progress.completed_nodes);
+                }
+            }
+        } catch (error) {
+            console.warn("Could not fetch progress sync.");
+        } finally {
+            setProgressLoaded(true);
+        }
+    };
+    
+    const timer = setTimeout(() => fetchProgress(), 600);
+    return () => clearTimeout(timer);
+  }, [user]);
+
+  useEffect(() => {
+      if (!progressLoaded || !user?.user_id) return;
+
+      const saveProgress = async () => {
+          try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session?.access_token) return;
+              
+              await fetch('/api/progress', {
+                  method: 'POST',
+                  headers: { 
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${session.access_token}` 
+                  },
+                  body: JSON.stringify({
+                      student_id: user.user_id,
+                      target_role: targetRole,
+                      completed_nodes: checkedSkills
+                  })
+              });
+          } catch (error) {
+              console.warn("Failed to sync progress to database.");
+          }
+      };
+
+      const timer = setTimeout(saveProgress, 1200); 
+      return () => clearTimeout(timer);
+  }, [checkedSkills, targetRole, progressLoaded, user]);
 
   const markAsRead = async (id: number) => {
     try {
@@ -233,7 +284,6 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                         <p className="text-sm font-bold group-hover:text-blue-500 transition-colors">{firstName}</p>
                         <p className="text-[10px] text-blue-500">{collegeId}</p>
                     </div>
-                    {/* Replaced hardcoded image with dynamic initials avatar */}
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center bg-blue-600 text-white font-bold border shadow-sm">
                          {userInitials}
                     </div>
@@ -248,8 +298,7 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.3, ease: "easeOut" }}
                     className="h-full max-w-7xl mx-auto"
                 >
-                    {/* Notice we are passing the ACTUAL user object down to the children now */}
-                    {currentView === "overview" && <Overview isDark={isDarkMode} targetRole={targetRole} />}
+                    {currentView === "overview" && <Overview isDark={isDarkMode} targetRole={targetRole} notifications={notifications} checkedSkills={checkedSkills} roleData={currentRoleData} />}
                     {currentView === "profile" && <ProfileView isDarkMode={isDarkMode} targetRole={targetRole} onRoleChange={(role) => { setTargetRole(role); setCheckedSkills([]); }} isUnlocked={isRoleUnlocked} user={user} />}
                     {currentView === "roadmap" && <RoadmapView isDark={isDarkMode} targetRole={targetRole} checkedSkills={checkedSkills} setCheckedSkills={setCheckedSkills} roleData={currentRoleData} user={user} />}
                     {currentView === "notes" && <NotesView isDark={isDarkMode} user={user} />}

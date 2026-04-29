@@ -1,19 +1,23 @@
-// app/api/admin/resumes/route.ts
 import { NextResponse } from 'next/server';
-import { getServiceSupabase } from '@/src/lib/supabase';
+import { getAuthSupabase } from '@/src/lib/supabase';
+import { z } from 'zod';
+
+const ResumeVerifySchema = z.object({
+    resume_id: z.number().int().positive(),
+    status: z.enum(['approved', 'rejected']),
+    rejection_reason: z.string().optional().nullable()
+});
 
 export async function GET(request: Request) {
     try {
-        const supabase = getServiceSupabase();
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        const token = authHeader.replace('Bearer ', '');
+        const supabase = getAuthSupabase(token);
         
         const { data: pendingResumes, error: dbError } = await supabase
             .from('resume_samples')
-            .select(`
-                resume_id, title, domain, experience_level, file_path, created_at, status,
-                uploader:users!resume_samples_uploaded_by_fkey (full_name, college_id, department)
-            `)
+            .select('resume_id, title, domain, experience_level, file_path, created_at, status, uploader:users!resume_samples_uploaded_by_fkey (full_name, college_id, department)')
             .eq('status', 'pending_hod')
             .order('created_at', { ascending: true });
 
@@ -21,19 +25,18 @@ export async function GET(request: Request) {
 
         return NextResponse.json({ pendingResumes }, { status: 200 });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to fetch pending resumes" }, { status: 500 });
     }
 }
 
 export async function PUT(request: Request) {
     try {
-        const supabase = getServiceSupabase();
-
-        // --- AUTHENTICATION & ROLE CHECK ---
         const authHeader = request.headers.get('Authorization');
         if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         const token = authHeader.replace('Bearer ', '');
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        const supabase = getAuthSupabase(token);
+
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
         if (authError || !user) return NextResponse.json({ error: "Invalid session" }, { status: 403 });
 
         const { data: userProfile, error: profileError } = await supabase
@@ -42,18 +45,16 @@ export async function PUT(request: Request) {
             .eq('auth_id', user.id)
             .single();
         
-        if (profileError || userProfile.role !== 'faculty') {
+        if (profileError || userProfile?.role !== 'faculty') {
             return NextResponse.json({ error: "Forbidden: Only faculty can verify resumes" }, { status: 403 });
         }
-        // -----------------------------------
 
-        const { resume_id, status, rejection_reason } = await request.json();
+        const rawBody = await request.json();
+        const validation = ResumeVerifySchema.safeParse(rawBody);
+        if (!validation.success) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
-        if (!resume_id || !['approved', 'rejected'].includes(status)) {
-            return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-        }
+        const { resume_id, status, rejection_reason } = validation.data;
 
-        // 1. Update the resume status
         const { data: updatedResume, error: updateError } = await supabase
             .from('resume_samples')
             .update({
@@ -64,9 +65,8 @@ export async function PUT(request: Request) {
             .select('uploaded_by, title')
             .single();
 
-        if (updateError) throw new Error(updateError.message);
+        if (updateError || !updatedResume) throw new Error("Update failed");
 
-        // 2. Notify the student
         const notificationTitle = status === 'approved' ? 'Resume Approved!' : 'Resume Rejected';
         const notificationMessage = status === 'approved' 
             ? `Your resume "${updatedResume.title}" has been verified and is now live in the archive.`
@@ -79,7 +79,6 @@ export async function PUT(request: Request) {
             type: status === 'approved' ? 'success' : 'error'
         }]);
 
-        // 3. [PHASE 6] INJECT AUDIT LOG
         await supabase.from('audit_logs').insert([{
             user_id: userProfile.user_id,
             action: status === 'approved' ? 'RESUME_APPROVED' : 'RESUME_REJECTED',
@@ -88,6 +87,6 @@ export async function PUT(request: Request) {
 
         return NextResponse.json({ message: `Resume ${status} successfully` }, { status: 200 });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ error: "Failed to update resume" }, { status: 500 });
     }
 }
