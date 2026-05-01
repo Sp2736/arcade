@@ -1,245 +1,361 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Briefcase, GraduationCap, Building2, Phone, Hash, AlertCircle } from 'lucide-react';
-import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Mail, Lock, User, IdCard, Building2, ChevronRight, ArrowRight,
+  GraduationCap, KeyRound, AlertCircle, Eye, EyeOff, Loader2,
+  Phone, Briefcase, MapPin, Target, CheckCircle
+} from "lucide-react";
+import { signIn } from "next-auth/react";
 
-export default function AuthView({ onClose }: { onClose: () => void }) {
-  const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  const router = useRouter();
+type AuthMode = "login" | "signup";
 
-  // Form State
-  const [formData, setFormData] = useState({
-    full_name: '',
-    college_email: '',
-    password: '',
-    college_id: '',
-    role: 'student',
-    department: 'Computer Science',
-    phone_number: '',
-  });
+interface AuthViewProps {
+  onAuthSuccess?: (userData: any) => void;
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError(''); // Clear errors when typing
-  };
+// --- VALIDATION HELPERS ---
+const isCollegeEmail = (email: string) => email.toLowerCase().endsWith("@charusat.edu.in");
+const isValidPhone = (phone: string) => phone === "" || /^[0-9]{10}$/.test(phone);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+export default function AuthView({ onAuthSuccess }: AuthViewProps) {
+  const [mode, setMode] = useState<AuthMode>("login");
+
+  return (
+    <div className="w-full min-h-screen md:h-screen flex flex-col md:flex-row bg-transparent text-white font-sans relative z-30 overflow-y-auto md:overflow-hidden custom-scrollbar">
+      
+      {/* ================= BRANDING PANEL ================= */}
+      <div className="flex w-full md:w-[45%] lg:w-[40%] min-h-[45vh] md:h-full bg-zinc-900/30 backdrop-blur-xl relative flex-col justify-between p-10 md:p-12 border-b md:border-b-0 md:border-r border-white/10 shrink-0">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-blue-900/10 to-transparent z-0" />
+        <div className="absolute -top-20 -right-20 w-96 h-96 bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+
+        <div className="relative z-10">
+          <h2 className="text-xl font-black tracking-[0.2em] text-white mb-2 uppercase">A.R.C.A.D.E.</h2>
+          <div className="h-1 w-12 bg-blue-600 rounded-full shadow-[0_0_10px_rgba(37,99,235,0.5)]" />
+        </div>
+
+        <div className="relative z-10 mt-10 md:mt-0">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-6">
+            Bridge the gap between <span className="text-blue-500">theory</span> and <span className="text-blue-500">reality</span>.
+          </h1>
+          <div className="flex items-center gap-3 text-zinc-400 text-sm">
+            <div className="flex -space-x-2">
+              <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-zinc-900" />
+              <div className="w-8 h-8 rounded-full bg-indigo-500 border-2 border-zinc-900" />
+              <div className="w-8 h-8 rounded-full bg-purple-500 border-2 border-zinc-900" />
+            </div>
+            <span className="font-medium">Faculty Verified Ecosystem</span>
+          </div>
+        </div>
+
+        <div className="relative z-10 text-[10px] text-zinc-500 font-mono mt-8 md:mt-0">
+          © 2026 ARCADE SYSTEM // V1.0.4
+        </div>
+      </div>
+
+      {/* ================= FORM PANEL ================= */}
+      <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col items-center justify-center p-6 sm:p-12 md:p-0 bg-[#050505] relative z-20">
+        <div className="w-full max-w-md py-8">
+          <div className="mb-8 text-center md:text-left">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">
+              {mode === "login" ? "User Login" : "Create Account"}
+            </h2>
+            <p className="text-zinc-400 text-sm">
+              {mode === "login" ? "Enter your credentials to access." : "Fill details to register."}
+            </p>
+          </div>
+
+          <div className="flex gap-8 mb-8 border-b border-white/10 justify-center md:justify-start">
+            {(["login", "signup"] as AuthMode[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setMode(tab)}
+                className={`pb-3 text-sm font-bold transition-all relative capitalize ${mode === tab ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
+              >
+                {tab === "login" ? "Login" : "Sign Up"}
+                {mode === tab && (
+                  <motion.div layoutId="tab-highlight" className="absolute bottom-[-1px] left-0 w-full h-[2px] bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            {mode === "login" ? (
+              <LoginForm key="login" onAuthSuccess={onAuthSuccess} />
+            ) : (
+              <SignupForm key="signup" />
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- LOGIN FORM ---
+function LoginForm({ onAuthSuccess }: { onAuthSuccess?: (userData: any) => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (!isCollegeEmail(email)) {
+      return setErrorMsg("Access restricted to official college email addresses only.");
+    }
+    if (password.length < 6) {
+      return setErrorMsg("Password must be at least 6 characters.");
+    }
+
+    setLoading(true);
 
     try {
-      if (isLogin) {
-        // --- NEXTAUTH LOGIN ---
-        const result = await signIn('credentials', {
-          redirect: false,
-          email: formData.college_email,
-          password: formData.password,
-        });
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
 
-        if (result?.error) {
-          setError(result.error);
-        } else {
-          router.push('/dashboard');
-          onClose();
-        }
-      } else {
-        // --- MONGODB SIGNUP ---
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.error || 'Failed to create account.');
-        } else {
-          // Auto-login after successful signup
-          await signIn('credentials', {
-            redirect: false,
-            email: formData.college_email,
-            password: formData.password,
-          });
-          router.push('/dashboard');
-          onClose();
-        }
+      if (result?.error) {
+        throw new Error(result.error);
       }
+
+      setSuccessMsg("Authentication successful. Initializing dashboard...");
+      if (onAuthSuccess) onAuthSuccess({ email });
+      
+      // Delay reload slightly so the user sees the green success message
+      setTimeout(() => window.location.reload(), 1200);
+
     } catch (err: any) {
-      setError('An unexpected error occurred. Please try again.');
+      // Log the exact error for debug purposes invisibly
+      console.error("[AUTH DEBUG - LOGIN]:", err);
+      // Show user-friendly error
+      setErrorMsg("Invalid credentials. Please verify your email and password and try again.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl overflow-hidden relative"
-      >
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <div className="p-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              {isLogin ? 'Access ARCADE' : 'Join ARCADE'}
-            </h2>
-            <p className="text-gray-400 text-sm">
-              {isLogin ? 'Enter your credentials to continue' : 'Create your university portal account'}
-            </p>
-          </div>
-
-          {error && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/50 rounded-lg flex items-start gap-2 text-red-400 text-sm">
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-              <p>{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {!isLogin && (
-              <div className="space-y-4">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    name="full_name"
-                    required
-                    placeholder="Full Name"
-                    value={formData.full_name}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                    <Hash className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    name="college_id"
-                    required
-                    placeholder="College ID (e.g., 24DCS123)"
-                    value={formData.college_id}
-                    onChange={handleChange}
-                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                      <GraduationCap className="w-4 h-4" />
-                    </div>
-                    <select
-                      name="role"
-                      value={formData.role}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all appearance-none"
-                    >
-                      <option value="student">Student</option>
-                      <option value="faculty">Faculty</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                      <Building2 className="w-4 h-4" />
-                    </div>
-                    <select
-                      name="department"
-                      value={formData.department}
-                      onChange={handleChange}
-                      className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all appearance-none"
-                    >
-                      <option value="Computer Science">CSE</option>
-                      <option value="Information Tech">IT</option>
-                      <option value="Electronics">ECE</option>
-                      <option value="Mechanical">MECH</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <Mail className="w-4 h-4" />
-              </div>
-              <input
-                type="email"
-                name="college_email"
-                required
-                placeholder="College Email"
-                value={formData.college_email}
-                onChange={handleChange}
-                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-              />
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">
-                <Lock className="w-4 h-4" />
-              </div>
-              <input
-                type="password"
-                name="password"
-                required
-                placeholder="Password"
-                value={formData.password}
-                onChange={handleChange}
-                className="w-full bg-gray-800 border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed mt-6"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                isLogin ? 'Sign In' : 'Create Account'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
-              className="text-gray-400 hover:text-white text-sm transition-colors"
-            >
-              {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
+    <motion.form
+      initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+      transition={{ duration: 0.2 }} className="space-y-4" onSubmit={handleLogin}
+    >
+      {errorMsg && (
+        <div className="text-red-500 text-xs font-bold bg-red-500/10 p-3 rounded border border-red-500/20 flex gap-2 items-center">
+          <AlertCircle size={14} className="shrink-0" /><span>{errorMsg}</span>
         </div>
-      </motion.div>
-    </div>
+      )}
+      
+      {successMsg && (
+        <div className="text-emerald-500 text-xs font-bold bg-emerald-500/10 p-3 rounded border border-emerald-500/20 flex gap-2 items-center">
+          <CheckCircle size={14} className="shrink-0" /><span>{successMsg}</span>
+        </div>
+      )}
+
+      <InputGroup label="College Email" icon={Mail} type="email" placeholder="e.g. 24dcs088@charusat.edu.in" value={email} onChange={(e: any) => setEmail(e.target.value)} required />
+      <InputGroup label="Password" icon={Lock} type="password" placeholder="Enter Password" isPassword value={password} onChange={(e: any) => setPassword(e.target.value)} required />
+
+      <button disabled={loading} className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-zinc-400 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 group mt-4">
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <><span>Sign In</span><ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" /></>}
+      </button>
+    </motion.form>
   );
 }
+
+// --- SIGNUP FORM ---
+function SignupForm() {
+  const [fullName, setFullName] = useState("");
+  const [collegeId, setCollegeId] = useState("");
+  const [email, setEmail] = useState("");
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [dept, setDept] = useState("");
+  const [role, setRole] = useState("");
+  const [targetRole, setTargetRole] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [cabin, setCabin] = useState("");
+  const [password, setPassword] = useState("");
+  const [adminCode, setAdminCode] = useState("");
+  
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    // Frontend Validations
+    if (!isCollegeEmail(email)) return setErrorMsg("You must register with a valid college email address.");
+    if (!isValidPhone(phone)) return setErrorMsg("Phone number must be exactly 10 digits.");
+    if (password.length < 6) return setErrorMsg("Password must be at least 6 characters long.");
+    
+    setLoading(true);
+
+    try {
+      const payload = {
+        full_name: fullName,
+        college_id: collegeId,
+        college_email: email,
+        personal_email: personalEmail.trim() === "" ? null : personalEmail.trim(),
+        phone_number: phone.trim() === "" ? null : phone.trim(),
+        department: dept,
+        role: role,
+        target_role: role === "student" && targetRole.trim() !== "" ? targetRole.trim() : null,
+        designation: (role === "faculty" || role === "admin") && designation.trim() !== "" ? designation.trim() : null,
+        cabin_location: (role === "faculty" || role === "admin") && cabin.trim() !== "" ? cabin.trim() : null,
+        password: password,
+        adminCode: (role === "faculty" || role === "admin") ? adminCode : null
+      };
+
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } 
+      catch { throw new Error("Server returned an invalid response."); }
+
+      if (!res.ok) throw new Error(data.error || "Failed to create account");
+
+      // Auto-login after successful signup
+      await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+
+      setSuccessMsg("Account created securely! Redirecting to dashboard...");
+      setTimeout(() => window.location.reload(), 1500); 
+
+    } catch (err: any) {
+      // Log the exact error for debug purposes invisibly
+      console.error("[AUTH DEBUG - SIGNUP]:", err);
+      // Show user-friendly error
+      setErrorMsg("Failed to establish account. Please ensure your ID and Email are not already in use.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <motion.form
+      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+      transition={{ duration: 0.2 }} className="space-y-3" onSubmit={handleSignup}
+    >
+      {errorMsg && (
+        <div className="text-red-500 text-xs font-bold bg-red-500/10 p-3 rounded border border-red-500/20 flex gap-2 items-center">
+          <AlertCircle size={14} className="shrink-0" /><span>{errorMsg}</span>
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="text-emerald-500 text-xs font-bold bg-emerald-500/10 p-3 rounded border border-emerald-500/20 flex gap-2 items-center">
+          <CheckCircle size={14} className="shrink-0" /><span>{successMsg}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <InputGroup label="Full Name" icon={User} type="text" placeholder="Enter Name" value={fullName} onChange={(e: any) => setFullName(e.target.value)} required />
+        <InputGroup label="College ID" icon={IdCard} type="text" placeholder="Official ID" value={collegeId} onChange={(e: any) => setCollegeId(e.target.value)} required />
+      </div>
+
+      <InputGroup label="College Email" icon={Mail} type="email" placeholder="Official College Email" value={email} onChange={(e: any) => setEmail(e.target.value)} required />
+      
+      <div className="grid grid-cols-2 gap-3">
+        <InputGroup label="Personal Email (Opt)" icon={Mail} type="email" placeholder="Backup Email" value={personalEmail} onChange={(e: any) => setPersonalEmail(e.target.value)} />
+        <InputGroup label="Phone Number (Opt)" icon={Phone} type="tel" placeholder="10-digit number" value={phone} onChange={(e: any) => setPhone(e.target.value)} />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <SelectGroup label="Department" icon={Building2} value={dept} onChange={(e: any) => setDept(e.target.value)} required>
+          <option value="" disabled>Select Dept</option>
+          <option value="Computer Engineering">Computer Engineering</option>
+          <option value="Computer Science and Engineering">Computer Science and Engineering</option>
+          <option value="Information Technology">Information Technology</option>
+        </SelectGroup>
+        <SelectGroup label="Role" icon={GraduationCap} value={role} onChange={(e: any) => setRole(e.target.value)} required>
+          <option value="" disabled>Select Role</option>
+          <option value="student">Student</option>
+          <option value="faculty">Faculty</option>
+          <option value="admin">Admin</option>
+        </SelectGroup>
+      </div>
+
+      <AnimatePresence>
+        {role === "student" && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}>
+            <InputGroup label="Target Role (Opt)" icon={Target} type="text" placeholder="e.g. Frontend Developer" value={targetRole} onChange={(e: any) => setTargetRole(e.target.value)} />
+          </motion.div>
+        )}
+
+        {(role === "faculty" || role === "admin") && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 pt-2">
+               <InputGroup label="Designation" icon={Briefcase} type="text" placeholder="e.g. Asst. Professor" value={designation} onChange={(e: any) => setDesignation(e.target.value)} />
+               <InputGroup label="Cabin Location" icon={MapPin} type="text" placeholder="e.g. Room 402" value={cabin} onChange={(e: any) => setCabin(e.target.value)} />
+            </div>
+            <div className="overflow-hidden bg-orange-500/10 border border-orange-500/20 rounded-lg p-2">
+              <InputGroup label="Verification Code" icon={KeyRound} type="password" placeholder="Admin Code" value={adminCode} onChange={(e: any) => setAdminCode(e.target.value)} noMargin required />
+              <div className="flex items-center gap-1.5 mt-1 text-[10px] text-orange-400"><AlertCircle size={10} /><span>Authorization required.</span></div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <InputGroup label="Password" icon={Lock} type="password" placeholder="Create Password (Min 6 chars)" isPassword value={password} onChange={(e: any) => setPassword(e.target.value)} required />
+
+      <button disabled={loading} className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 disabled:text-zinc-400 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 group mt-3">
+        {loading ? <Loader2 size={18} className="animate-spin" /> : <><span>Create Account</span><ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" /></>}
+      </button>
+    </motion.form>
+  );
+}
+
+// --- UI COMPONENTS ---
+const InputGroup = ({ label, icon: Icon, type, placeholder, isPassword, noMargin, value, onChange, required }: any) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const inputType = isPassword ? (showPassword ? "text" : "password") : type;
+
+  return (
+    <div className={noMargin ? "" : "space-y-1"}>
+      <label className="text-xs font-medium text-zinc-400 ml-1">{label} {required && <span className="text-red-500">*</span>}</label>
+      <div className="relative group">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors pointer-events-none"><Icon size={16} /></div>
+        <input type={inputType} placeholder={placeholder} value={value} onChange={onChange} required={required} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg py-2 pl-10 pr-10 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all" />
+        {isPassword && (
+          <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors p-1">
+            {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const SelectGroup = ({ label, icon: Icon, children, onChange, value, required }: any) => (
+  <div className="space-y-1">
+    <label className="text-xs font-medium text-zinc-400 ml-1">{label} {required && <span className="text-red-500">*</span>}</label>
+    <div className="relative group">
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-white transition-colors pointer-events-none"><Icon size={16} /></div>
+      <select value={value} onChange={onChange} required={required} className="w-full appearance-none bg-zinc-900 border border-zinc-800 rounded-lg py-2 pl-10 pr-8 text-sm text-zinc-300 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all cursor-pointer">
+        {children}
+      </select>
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-600">
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1L5 5L9 1" /></svg>
+      </div>
+    </div>
+  </div>
+);

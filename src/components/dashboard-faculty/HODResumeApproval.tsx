@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { CheckCircle, XCircle, FileText, AlertCircle, Eye } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 export default function HODResumeApproval({ isDark }: { isDark: boolean }) {
   const [pendingResumes, setPendingResumes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [rejectionModal, setRejectionModal] = useState<{ isOpen: boolean, resumeId: number | null, reason: string }>({ isOpen: false, resumeId: null, reason: "" });
+  const [rejectionModal, setRejectionModal] = useState<{ isOpen: boolean, resumeId: string | null, reason: string }>({ isOpen: false, resumeId: null, reason: "" });
 
   useEffect(() => {
     fetchPendingResumes();
@@ -17,30 +14,35 @@ export default function HODResumeApproval({ isDark }: { isDark: boolean }) {
 
   const fetchPendingResumes = async () => {
     setIsLoading(true);
-    // Fetching from resume_samples with joined user data for the uploader
-    const { data, error } = await supabase
-      .from('resume_samples')
-      .select(`*, uploader:users!uploaded_by(full_name, designation)`)
-      .eq('status', 'pending_hod');
-      
-    if (!error && data) setPendingResumes(data);
+    try {
+        // Fetching pending resumes using internal API
+        const res = await fetch('/api/admin/resumes/pending');
+        if (res.ok) {
+            const data = await res.json();
+            setPendingResumes(data || []);
+        }
+    } catch (error) {
+        console.error("Failed to fetch pending resumes:", error);
+    }
     setIsLoading(false);
   };
 
-  const handleAction = async (resumeId: number, action: 'approved' | 'rejected', reason?: string) => {
+  const handleAction = async (resumeId: string, action: 'approved' | 'rejected', reason?: string) => {
     try {
-      const { error } = await supabase
-        .from('resume_samples')
-        .update({ 
-            status: action, 
-            ...(reason && { rejection_reason: reason })
-        })
-        .eq('resume_id', resumeId);
+      const res = await fetch('/api/admin/resumes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+              resume_id: resumeId,
+              status: action,
+              rejection_reason: reason
+          })
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error("Approval action failed");
       
       // Remove from UI optimistically
-      setPendingResumes(prev => prev.filter(r => r.resume_id !== resumeId));
+      setPendingResumes(prev => prev.filter(r => r._id !== resumeId));
       if (action === 'rejected') setRejectionModal({ isOpen: false, resumeId: null, reason: "" });
       
     } catch (error) {
@@ -70,7 +72,7 @@ export default function HODResumeApproval({ isDark }: { isDark: boolean }) {
       ) : (
         <div className="grid grid-cols-1 gap-4">
             {pendingResumes.map((resume) => (
-                <div key={resume.resume_id} className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${bgCard}`}>
+                <div key={resume._id} className={`p-5 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 ${bgCard}`}>
                     <div className="flex items-start gap-4">
                         <div className={`p-3 rounded-lg ${isDark ? "bg-blue-900/20 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
                             <FileText size={24} />
@@ -81,7 +83,7 @@ export default function HODResumeApproval({ isDark }: { isDark: boolean }) {
                                 <span>Domain: <span className="font-semibold text-slate-700 dark:text-slate-300">{resume.domain}</span></span>
                                 <span>Level: <span className="font-semibold text-slate-700 dark:text-slate-300 uppercase">{resume.experience_level}</span></span>
                             </div>
-                            <p className="text-xs text-slate-400 mt-2">Uploaded by {resume.uploader?.full_name} ({resume.uploader?.designation})</p>
+                            <p className="text-xs text-slate-400 mt-2">Uploaded by {resume.uploaded_by?.full_name || resume.uploader?.full_name} ({resume.uploaded_by?.designation || resume.uploader?.designation || 'Faculty'})</p>
                         </div>
                     </div>
                     
@@ -90,13 +92,13 @@ export default function HODResumeApproval({ isDark }: { isDark: boolean }) {
                             <Eye size={18} className="text-slate-500" />
                         </button>
                         <button 
-                            onClick={() => handleAction(resume.resume_id, 'approved')}
+                            onClick={() => handleAction(resume._id, 'approved')}
                             className="flex-1 md:flex-none px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             <CheckCircle size={16} /> Approve
                         </button>
                         <button 
-                            onClick={() => setRejectionModal({ isOpen: true, resumeId: resume.resume_id, reason: "" })}
+                            onClick={() => setRejectionModal({ isOpen: true, resumeId: resume._id, reason: "" })}
                             className="flex-1 md:flex-none px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
                         >
                             <XCircle size={16} /> Reject

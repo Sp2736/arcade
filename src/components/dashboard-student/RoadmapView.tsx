@@ -4,9 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Check, Info, Lock } from "lucide-react";
 import { motion } from "framer-motion";
 import Confetti from "./Confetti"; 
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+import { useSession } from "next-auth/react";
 
 interface RoadmapViewProps {
   isDark: boolean;
@@ -14,41 +12,46 @@ interface RoadmapViewProps {
   checkedSkills: string[];
   setCheckedSkills: (skills: string[]) => void;
   roleData: any;
-  user: any; // Added user prop
+  user: any; 
 }
 
 export default function RoadmapView({ isDark, targetRole, checkedSkills, setCheckedSkills, roleData, user }: RoadmapViewProps) {
+  const { data: session } = useSession();
   const [celebration, setCelebration] = useState<{ type: "standard" | "fireworks" | "none", title?: string, msg?: string }>({ type: "none" });
 
-  // Fetch progress on load
+  // Fetch progress on load using standard REST
   useEffect(() => {
     const fetchProgress = async () => {
-        if (!user?.user_id) return;
-        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
         try {
-            const res = await fetch(`/api/progress?student_id=${user.user_id}`, {
-                headers: { 'Authorization': `Bearer ${session?.access_token}` }
-            });
-            const data = await res.json();
-            if (data.progress && data.progress.completed_nodes) {
-                setCheckedSkills(data.progress.completed_nodes);
+            // NextAuth cookies automatically authorize this request
+            const res = await fetch(`/api/progress`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.completed_nodes) {
+                    setCheckedSkills(data.completed_nodes);
+                }
             }
-        } catch (error) { console.error("Failed to load progress"); }
+        } catch (error) { 
+            console.error("Failed to load progress"); 
+        }
     };
     fetchProgress();
-  }, [user]);
+  }, [session]);
 
   const saveProgressToDb = async (newSkills: string[]) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      await fetch('/api/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-          body: JSON.stringify({
-              student_id: user.user_id,
-              target_role: targetRole,
-              completed_nodes: newSkills
-          })
-      });
+      try {
+          await fetch('/api/progress', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  target_role: targetRole,
+                  completed_nodes: newSkills
+              })
+          });
+      } catch (error) {
+          console.error("Failed to save progress");
+      }
   };
 
   const handleCheck = (skill: string, category: "mandatory" | "advanced" | "optional") => {

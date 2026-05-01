@@ -1,4 +1,3 @@
-// src/components/dashboard-faculty/FacultyDashboard.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,10 +18,10 @@ const MODULES = [
   { id: "audit", label: "Audit Logs", icon: ShieldAlert },
 ];
 
-type Notification = { notification_id: number; title: string; message: string; created_at: string; type: "info" | "success" | "warning" | "error"; is_read: boolean; };
+type Notification = { _id: string; title: string; message: string; created_at: string; type: "info" | "success" | "warning" | "error"; is_read: boolean; };
 
 interface FacultyProps {
-  user?: any; // Added user prop mapping
+  user?: any;
   onLogout: () => void;
 }
 
@@ -33,8 +32,7 @@ export default function FacultyDashboard({ user, onLogout }: FacultyProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Dynamic user data mapping
-  const fullName = user?.full_name || "Faculty Member";
+  const fullName = user?.full_name || user?.name || "Faculty Member";
   const firstName = fullName.split(" ")[0];
   const userInitials = firstName.substring(0, 2).toUpperCase();
   const department = user?.department || "Department Pending";
@@ -58,15 +56,14 @@ export default function FacultyDashboard({ user, onLogout }: FacultyProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch real notifications from the database
   useEffect(() => {
     const fetchNotifications = async () => {
-        if (!user?.user_id) return;
+        if (!user) return;
         try {
-            const res = await fetch(`/api/notifications?user_id=${user.user_id}`);
+            const res = await fetch(`/api/notifications`);
             if (res.ok) {
                 const data = await res.json();
-                setNotifications(data.notifications || []);
+                setNotifications(data || []);
             }
         } catch (error) {
             console.error("Failed to load notifications:", error);
@@ -81,14 +78,14 @@ export default function FacultyDashboard({ user, onLogout }: FacultyProps) {
     localStorage.setItem("arcade-theme", newMode ? "dark" : "light");
   };
 
-  const markAsRead = async (id: number) => {
+  const markAsRead = async (id: string) => {
     try {
-        await fetch('/api/notifications', {
+        await fetch('/api/notifications/clear', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ notification_id: id })
         });
-        setNotifications(prev => prev.filter(n => n.notification_id !== id));
+        setNotifications(prev => prev.filter(n => n._id !== id));
     } catch (error) {
         console.error("Failed to clear notification:", error);
     }
@@ -181,8 +178,8 @@ export default function FacultyDashboard({ user, onLogout }: FacultyProps) {
                           </div>
                         ) : (
                           notifications.map((n) => (
-                            <div key={n.notification_id} className={`p-3 border-b relative group transition-colors ${isDarkMode ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-100 hover:bg-slate-50"}`}>
-                              <button onClick={() => markAsRead(n.notification_id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"><X size={12} /></button>
+                            <div key={n._id || n.notification_id} className={`p-3 border-b relative group transition-colors ${isDarkMode ? "border-slate-800 hover:bg-slate-800/50" : "border-slate-100 hover:bg-slate-50"}`}>
+                              <button onClick={() => markAsRead(n._id || n.notification_id.toString())} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"><X size={12} /></button>
                               <div className="flex gap-3">
                                 <div className={`mt-0.5 shrink-0 ${n.type === "warning" ? "text-amber-500" : n.type === "success" ? "text-emerald-500" : n.type === "error" ? "text-red-500" : "text-blue-500"}`}>
                                   {n.type === "warning" ? <AlertTriangle size={14} /> : n.type === "success" ? <CheckCircle size={14} /> : <Info size={14} />}

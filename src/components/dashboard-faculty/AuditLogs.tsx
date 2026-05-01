@@ -1,11 +1,7 @@
-// src/components/dashboard-faculty/AuditLogs.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { ShieldAlert, Activity, CheckCircle, XCircle, FileText, BookOpen, Loader2 } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 interface AuditLogsProps {
   isDark: boolean;
@@ -25,14 +21,11 @@ export default function AuditLogs({ isDark, user }: AuditLogsProps) {
       
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const res = await fetch(`/api/admin/audit`, {
-          headers: { 'Authorization': `Bearer ${session?.access_token}` }
-        });
+        const res = await fetch(`/api/admin/audit`);
         
         if (res.ok) {
           const data = await res.json();
-          setLogs(data.logs || []);
+          setLogs(data || []);
         }
       } catch (error) {
         console.error("Failed to load audit logs:", error);
@@ -110,14 +103,14 @@ export default function AuditLogs({ isDark, user }: AuditLogsProps) {
                             </td>
                         </tr>
                     ) : logs.length > 0 ? (
-                        logs.map((log) => (
-                            <tr key={log.log_id} className={`transition-colors ${isDark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}>
+                        logs.map((log, idx) => (
+                            <tr key={log._id || idx} className={`transition-colors ${isDark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}>
                                 <td className="p-4 text-xs font-mono text-slate-500">
                                     {new Date(log.timestamp).toLocaleString()}
                                 </td>
                                 <td className="p-4">
-                                    <p className="font-bold">{log.users?.full_name}</p>
-                                    <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{log.users?.department}</p>
+                                    <p className="font-bold">{log.user_id?.full_name || log.users?.full_name || 'System'}</p>
+                                    <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{log.user_id?.department || log.users?.department || 'N/A'}</p>
                                 </td>
                                 <td className="p-4">
                                     <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider border ${getActionStyles(log.action)}`}>
@@ -125,7 +118,7 @@ export default function AuditLogs({ isDark, user }: AuditLogsProps) {
                                     </div>
                                 </td>
                                 <td className="p-4">
-                                    <p className="font-medium">{log.details?.title || 'Unknown Document'}</p>
+                                    <p className="font-medium">{log.details?.title || 'System Action'}</p>
                                     {log.details?.rejection_reason && (
                                         <p className="text-xs text-red-500 mt-1 truncate max-w-sm">
                                             Reason: {log.details.rejection_reason}

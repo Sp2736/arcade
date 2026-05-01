@@ -1,17 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   FileText, Cpu, Award, 
   Layers, Sparkles, ScrollText, ExternalLink, Activity, Bell, Map, ChevronRight, X
 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
 
 interface OverviewProps {
   isDark: boolean;
@@ -46,20 +40,25 @@ export default function Overview({ isDark, targetRole, notifications, checkedSki
   const unreadAlerts = notifications?.filter(n => !n.is_read) || [];
   const displayAlerts = unreadAlerts.slice(0, 2);
 
-  // Fetch Latest 5 Assets directly from Database
+  // Fetch Latest 5 Assets via standard API
   const fetchLatestAssets = async () => {
       setIsLoadingAssets(true);
       setShowAssetsPopup(true);
       try {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) return;
+          const [notesRes, resumesRes] = await Promise.all([
+            fetch('/api/notes'),
+            fetch('/api/resumes')
+          ]);
           
-          const { data: notes } = await supabase.from('notes').select('id:note_id, title, file_path, created_at').eq('status', 'approved').order('created_at', { ascending: false }).limit(5);
-          const { data: resumes } = await supabase.from('resume_samples').select('id:resume_id, title, file_path, created_at').eq('status', 'approved').order('created_at', { ascending: false }).limit(5);
+          let notes = [];
+          let resumes = [];
+          
+          if (notesRes.ok) notes = await notesRes.json();
+          if (resumesRes.ok) resumes = await resumesRes.json();
           
           const combined = [
-              ...(notes?.map(n => ({ ...n, type: 'Material' })) || []), 
-              ...(resumes?.map(r => ({ ...r, type: 'Resume' })) || [])
+              ...notes.slice(0, 5).map((n: any) => ({ ...n, type: 'Material' })), 
+              ...resumes.slice(0, 5).map((r: any) => ({ ...r, type: 'Resume' }))
           ];
           
           combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -136,7 +135,7 @@ export default function Overview({ isDark, targetRole, notifications, checkedSki
             <h4 className={`text-lg font-bold mb-2 ${textMain}`}>Pending Alerts</h4>
             <ul className="space-y-2 min-h-[40px]">
                 {displayAlerts.length > 0 ? displayAlerts.map(alert => (
-                    <li key={alert.notification_id} className="text-sm text-zinc-500 flex items-start gap-2 line-clamp-1 truncate">
+                    <li key={alert._id || alert.notification_id} className="text-sm text-zinc-500 flex items-start gap-2 line-clamp-1 truncate">
                         <span className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-1.5 shrink-0"></span> 
                         {alert.title}
                     </li>

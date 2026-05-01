@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { User, MapPin, Save, Shield, Lock, AlertCircle } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+import { useSession } from "next-auth/react";
 
 interface FacultyProfileProps {
   isDark: boolean;
@@ -12,6 +10,7 @@ interface FacultyProfileProps {
 }
 
 export default function FacultyProfile({ isDark, user }: FacultyProfileProps) {
+  const { update: updateSession } = useSession();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "", empId: "", department: "", cabin: "", position: ""
@@ -23,7 +22,7 @@ export default function FacultyProfile({ isDark, user }: FacultyProfileProps) {
   useEffect(() => {
     if (user) {
         setFormData({
-            fullName: user.full_name || "",
+            fullName: user.full_name || user.name || "",
             empId: user.college_id || "",
             department: user.department || "",
             cabin: user.cabin_location || "",
@@ -49,12 +48,10 @@ export default function FacultyProfile({ isDark, user }: FacultyProfileProps) {
     if (!isEditing) { setIsEditing(true); return; }
     setIsSaving(true);
     try {
-        const { data: { session } } = await supabase.auth.getSession();
         const res = await fetch('/api/profile', {
             method: 'PATCH',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session?.access_token}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 cabin_location: formData.cabin,
@@ -65,8 +62,8 @@ export default function FacultyProfile({ isDark, user }: FacultyProfileProps) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to save profile");
 
-        // Update local storage so it persists on reload
-        localStorage.setItem("arcade-user", JSON.stringify(data.user));
+        // Force NextAuth to refresh the session in the background
+        await updateSession();
         
         // Lock immediately after success
         setIsLocked(true);

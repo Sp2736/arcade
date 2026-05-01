@@ -2,11 +2,10 @@
 
 import React, { useState } from "react";
 import { UploadCloud, FileText, CheckCircle, AlertCircle } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+import { useSession } from "next-auth/react";
 
 export default function FacultyResumeUpload({ isDark, user }: { isDark: boolean, user: any }) {
+  const { data: session } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string }>({ type: null, message: '' });
   
@@ -14,51 +13,44 @@ export default function FacultyResumeUpload({ isDark, user }: { isDark: boolean,
     title: "",
     domain: "",
     experience_level: "fresher",
-    file: null as File | null
+    file: null as File | null,
+    fileUrl: "" // Added for manual URL entry if needed before Vercel Blob setup
   });
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.file || !formData.title || !formData.domain) return;
+    if (!formData.title || !formData.domain) return;
     
     setIsUploading(true);
     setStatus({ type: null, message: '' });
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error("Unauthorized");
       
-      // 1. Upload file to Supabase Storage (assuming a 'resumes' bucket exists)
-      const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `resumes/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('documents')
-        .upload(filePath, formData.file);
+      // NOTE FOR DEPLOYMENT: 
+      // Insert Vercel Blob or Uploadthing logic here to get the real file URL.
+      // For now, we simulate the path or use the manual URL.
+      const finalFilePath = formData.fileUrl || `https://storage.provider.com/mock-path/${Date.now()}.pdf`;
 
-      if (uploadError) throw uploadError;
-
-      // 2. Insert record into database
       const res = await fetch('/api/resumes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`
         },
         body: JSON.stringify({
           title: formData.title,
           domain: formData.domain,
           experience_level: formData.experience_level,
-          file_path: filePath,
-          // If user is HOD, auto-approve. Otherwise, pending.
+          file_path: finalFilePath,
           status: user?.is_hod ? 'approved' : 'pending_hod' 
         })
       });
 
-      if (!res.ok) throw new Error("Database insertion failed");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Database insertion failed");
 
       setStatus({ type: 'success', message: user?.is_hod ? 'Resume published successfully!' : 'Resume submitted for HOD approval.' });
-      setFormData({ title: "", domain: "", experience_level: "fresher", file: null });
+      setFormData({ title: "", domain: "", experience_level: "fresher", file: null, fileUrl: "" });
 
     } catch (error: any) {
       setStatus({ type: 'error', message: error.message });
@@ -85,7 +77,7 @@ export default function FacultyResumeUpload({ isDark, user }: { isDark: boolean,
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div>
                 <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Resume Title</label>
-                <input type="text" placeholder="e.g., Google SWE Format" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={inputClass} required />
+                <input type="text" placeholder="e.g., FAANG SWE Format" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className={inputClass} required />
             </div>
             <div>
                 <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Domain</label>
@@ -103,12 +95,9 @@ export default function FacultyResumeUpload({ isDark, user }: { isDark: boolean,
             </select>
         </div>
 
-        <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${isDark ? "border-slate-700 hover:border-blue-500 bg-slate-900" : "border-slate-300 hover:border-blue-500 bg-slate-50"}`}>
-            <input type="file" id="resume-upload" className="hidden" accept=".pdf,.doc,.docx" onChange={e => setFormData({...formData, file: e.target.files?.[0] || null})} />
-            <label htmlFor="resume-upload" className="cursor-pointer flex flex-col items-center">
-                <UploadCloud size={32} className={`mb-3 ${formData.file ? "text-blue-500" : "text-slate-400"}`} />
-                <span className="text-sm font-medium dark:text-slate-300">{formData.file ? formData.file.name : "Click to select a file (PDF, DOCX)"}</span>
-            </label>
+        <div>
+            <label className="text-xs font-bold uppercase text-slate-500 mb-2 block">Drive Link (Temporary)</label>
+            <input type="url" placeholder="https://drive.google.com/..." value={formData.fileUrl} onChange={e => setFormData({...formData, fileUrl: e.target.value})} className={inputClass} required />
         </div>
 
         {status.type && (
@@ -118,7 +107,7 @@ export default function FacultyResumeUpload({ isDark, user }: { isDark: boolean,
             </div>
         )}
 
-        <button type="submit" disabled={isUploading || !formData.file} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold transition-all flex justify-center items-center gap-2">
+        <button type="submit" disabled={isUploading} className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold transition-all flex justify-center items-center gap-2">
             {isUploading ? <span className="animate-pulse">Processing...</span> : <><UploadCloud size={18} /> Submit Resource</>}
         </button>
       </form>
