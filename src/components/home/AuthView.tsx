@@ -16,7 +16,7 @@ interface AuthViewProps {
 }
 
 // --- VALIDATION HELPERS ---
-const isCollegeEmail = (email: string) => email.toLowerCase().endsWith("@charusat.edu.in");
+const isCollegeEmail = (email: string) => email.toLowerCase().endsWith("@charusat.edu.in") || email.toLowerCase().endsWith("@charusat.ac.in");
 const isValidPhone = (phone: string) => phone === "" || /^[0-9]{10}$/.test(phone);
 
 export default function AuthView({ onAuthSuccess }: AuthViewProps) {
