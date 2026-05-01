@@ -127,24 +127,26 @@ export default function StudentDashboard({
 
   const [fullUserData, setFullUserData] = useState(user);
 
-useEffect(() => {
-  const getFullProfile = async () => {
-    try {
-      const res = await fetch('/api/user');
-      if (res.ok) {
-        const data = await res.json();
-        setFullUserData(data);
+  useEffect(() => {
+    const getFullProfile = async () => {
+      try {
+        const res = await fetch('/api/user');
+        if (res.ok) {
+          const data = await res.json();
+          setFullUserData(data);
+        }
+      } catch (e) {
+        console.warn("Could not fetch full user details.");
       }
-    } catch (e) {
-      console.warn("Could not fetch full user details.");
-    }
-  };
-  
-  if (!user?.college_id) getFullProfile();
-}, [user]);
+    };
+    
+    if (!user?.college_id) getFullProfile();
+  }, [user]);
 
   const [currentView, setCurrentView] = useState("overview");
-  const activeUser = user?.college_id ? user : session?.user;
+  
+  // Prioritize session user to capture newly injected NextAuth token data
+  const activeUser = session?.user || user;
 
   const fullName = activeUser?.full_name || activeUser?.name || "Student Name";
   const firstName = fullName.split(" ")[0];

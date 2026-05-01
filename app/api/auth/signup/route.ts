@@ -33,11 +33,11 @@ export async function POST(req: Request) {
     // Hash the password securely (10 salt rounds)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the new user in MongoDB
+    // Create the new user in MongoDB (updated to match new User.ts schema)
     const newUser = await User.create({
       full_name,
       college_email,
-      password_hash: hashedPassword,
+      password: hashedPassword, // Changed from password_hash to password
       college_id,
       role: role || 'student', // Default to student
       department
@@ -48,6 +48,7 @@ export async function POST(req: Request) {
       full_name: newUser.full_name,
       college_email: newUser.college_email,
       role: newUser.role,
+      college_id: newUser.college_id,
     };
 
     return NextResponse.json(
