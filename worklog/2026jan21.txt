@@ -1,0 +1,4 @@
+.LOG 
+
+07:21 21-01-2026
+This day was dedicated to exploring and comparing multiple UI themes suitable for an academic yet modern platform. I evaluated color palettes, typography styles, spacing, and visual hierarchy to ensure readability and professionalism. Special attention was given to maintaining consistency across future modules. After iterations and comparisons, a theme was shortlisted that aligns with ARCADE’s academic focus while still feeling clean and contemporary.

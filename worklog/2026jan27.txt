@@ -1,0 +1,4 @@
+.LOG 
+
+10:35 27-01-2026
+an idea to have visually appealing roadmaps with checkboxes besides skills to encourage constant learning.
