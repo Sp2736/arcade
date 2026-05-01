@@ -13,23 +13,25 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        await dbConnect();
-
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter both email and password.');
-        }
-
         const user = await User.findOne({ college_email: credentials.email });
 
-        if (!user) {
-          throw new Error('No user found with this email.');
-        }
+if (!user) {
+  throw new Error("No user found with this email.");
+}
 
-        const isPasswordMatch = await bcrypt.compare(credentials.password, user.password_hash);
+// Safely grab the password, checking both possible field names from your migration
+const dbPassword = user.password || user.password_hash;
 
-        if (!isPasswordMatch) {
-          throw new Error('Incorrect password.');
-        }
+// THE GUARDRAIL: Prevent the bcrypt crash if the password field is missing
+if (!dbPassword) {
+  throw new Error("This account exists but has no password set in the database. Please contact an administrator.");
+}
+
+const isPasswordValid = await bcrypt.compare(credentials.password, dbPassword);
+
+if (!isPasswordValid) {
+  throw new Error("Invalid credentials.");
+}
 
         // The object returned here is saved in the NextAuth JWT token
         return {
@@ -51,6 +53,7 @@ callbacks: {
       token.college_id = user.college_id; // CRITICAL: This fixes "ID PENDING"
       token.department = user.department;
       token.full_name = user.full_name;
+      token.is_hod = (user as any).is_hod;
     }
     return token;
   },
@@ -62,6 +65,7 @@ callbacks: {
       session.user.college_id = token.college_id; // CRITICAL: This fixes "ID PENDING"
       session.user.department = token.department;
       session.user.full_name = token.full_name;
+      session.user.is_hod = token.is_hod as boolean;
     }
     return session;
   }

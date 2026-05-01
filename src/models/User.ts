@@ -1,29 +1,66 @@
-import mongoose from "mongoose";
+// src/models/User.ts
+import mongoose, { Schema, Document, Model } from "mongoose";
 
-const UserSchema = new mongoose.Schema(
+export interface IUser extends Document {
+  full_name: string;
+  college_email: string;
+  personal_email?: string;
+  password: string; // Changed from password_hash
+  college_id: string;
+  role: "student" | "faculty" | "admin";
+  department: string;
+  bio?: string;
+  phone_number?: string;
+  profile_picture?: string;
+  target_role?: string;
+  designation?: string;
+  cabin_location?: string;
+  is_hod: boolean;
+  last_login?: Date;
+  last_profile_update?: Date;
+  last_role_update?: Date;
+  is_verified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const UserSchema: Schema<IUser> = new Schema(
   {
     full_name: { type: String, required: true },
-    college_id: { type: String, required: true, unique: true },
     college_email: { type: String, required: true, unique: true },
-    personal_email: { type: String, default: null },
-    phone_number: { type: String, default: null },
-    department: { type: String, required: true },
+    
+    // THE FIX: sparse: true prevents the E11000 error for multiple nulls
+    personal_email: { type: String, unique: true, sparse: true },
+    
+    password: { type: String, required: true },
+    college_id: { type: String, required: true, unique: true },
     role: { 
       type: String, 
-      enum: ["student", "faculty", "admin"], 
-      required: true 
+      required: true, 
+      enum: ["student", "faculty", "admin"] 
     },
-    target_role: { type: String, default: null },
-    designation: { 
-      type: String, 
-      enum: ["Assistant Professor", "Head of Department", "System Administrator", null], 
-      default: null 
-    },
-    cabin_location: { type: String, default: null },
-    password: { type: String, required: true },
-    permissions: [{ type: String }] // Stores specific operational rights
+    department: { type: String, required: true },
+    bio: { type: String },
+    
+    // THE FIX: sparse: true here as well to prevent future phone number clashes
+    phone_number: { type: String, unique: true, sparse: true },
+    
+    profile_picture: { type: String },
+    target_role: { type: String },
+    designation: { type: String },
+    cabin_location: { type: String },
+    is_hod: { type: Boolean, default: false },
+    last_login: { type: Date },
+    last_profile_update: { type: Date },
+    last_role_update: { type: Date },
+    is_verified: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { 
+    timestamps: true // Automatically manages createdAt and updatedAt
+  }
 );
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+// Prevent model recompilation error in Next.js during hot reloads
+const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+
+export default User;
