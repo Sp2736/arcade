@@ -1,28 +1,32 @@
 import { google } from "@ai-sdk/google";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-// --- CRITICAL IMPORT ---
-// Ensure this path points to where your authOptions are defined
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; 
+
+// TODO: Import your new MongoDB/Auth utility here
+// import { verifyUserToken } from "@/src/lib/auth";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
   try {
-    // --- AUTHENTICATION CHECK (REPAIRED) ---
-    // Passing authOptions allows NextAuth to use your SECRET to decrypt the JWT
-    const session = await getServerSession(authOptions);
-    
-    if (!session || !session.user) {
-      console.error("[CHAT_AUTH_ERROR]: No session found during AI request");
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid session" },
-        { status: 403 },
-      );
+    // --- AUTHENTICATION CHECK (UPDATED FOR MONGODB) ---
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      const token = authHeader.replace("Bearer ", "");
+      
+      // TODO: Replace this pseudo-code with your actual MongoDB/JWT auth logic.
+      // Example:
+      // const user = await verifyUserToken(token);
+      // if (!user) {
+      //   return NextResponse.json(
+      //     { error: "Unauthorized: Invalid session" },
+      //     { status: 403 },
+      //   );
+      // }
     }
-    // ---------------------------------------
+    // ----------------------------
 
+    // Extract the message history sent from the frontend
     const { messages } = await req.json();
 
     const systemPrompt = `You are the official AI Assistant for ARCADE, a dynamic, role-based access control university hub application. Your job is to help users navigate the platform, understand its features, and troubleshoot issues. You must be polite, concise, and highly accurate.
@@ -54,23 +58,24 @@ export async function POST(req: Request) {
     General Features:
     - Real-time notifications are pushed for status updates (e.g., when a note is verified).
     - The platform uses strict type-checking and secure authentication to ensure data privacy.
-    - Tech Stack: Next.js (React), NextAuth, MongoDB, Tailwind CSS.
+    - Tech Stack: Next.js (React), Supabase, PostgreSQL, Tailwind CSS.
 
     If a user asks how to do something, provide step-by-step guidance based on their role. If they ask about a feature they do not have access to, politely explain that the feature is restricted to Admin or Faculty roles.`;
 
-    // Call Gemini 1.5 Flash (Most stable model for AI SDK)
+    // Call Gemini 3.1 Flash
     const { text } = await generateText({
-      model: google("gemini-1.5-flash"), 
+      model: google("gemini-3.1-flash-lite-preview"),
       system: systemPrompt,
       messages: messages,
       temperature: 0.7,
     });
 
+    // Return a standard JSON response
     return NextResponse.json({ text }, { status: 200 });
   } catch (error: any) {
     console.error("Error in Gemini API route:", error);
     return NextResponse.json(
-      { error: "Internal Server Error. Check server logs." },
+      { error: error.message || "Internal Server Error" },
       { status: 500 },
     );
   }

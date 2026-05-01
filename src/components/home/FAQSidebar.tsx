@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles, X, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown from "react-markdown"; // <-- Import the new parser
 
 type Message = { id: string; role: "user" | "assistant"; content: string };
 
@@ -28,7 +28,6 @@ export default function FAQSidebar({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom of chat
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
@@ -63,25 +62,15 @@ export default function FAQSidebar({
 
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || "Chat failed");
-
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.text || "I encountered an error processing your request.",
+        content: data.text || "I encountered an error.",
       };
 
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
       console.error("Chat error:", error);
-      setMessages((prev) => [
-        ...prev,
-        { 
-          id: "error", 
-          role: "assistant", 
-          content: "I'm having trouble connecting to the system. Please ensure you are logged in." 
-        },
-      ]);
     } finally {
       setIsLoading(false);
     }
@@ -104,7 +93,6 @@ export default function FAQSidebar({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Mobile Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -118,9 +106,8 @@ export default function FAQSidebar({
             animate="open"
             exit="closed"
             variants={sidebarVariants}
-            className="fixed inset-y-0 right-0 z-[100] flex flex-col bg-zinc-950 border-l border-white/10 shadow-2xl w-full md:w-[350px] lg:w-[400px]"
+            className="fixed inset-y-0 right-0 z-[100] flex flex-col bg-zinc-950 border-l border-white/10 shadow-2xl w-full md:w-[30vw]"
           >
-            {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-zinc-900/50">
               <div className="flex items-center gap-2">
                 <Sparkles
@@ -139,7 +126,6 @@ export default function FAQSidebar({
               </button>
             </div>
 
-            {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-zinc-950">
               {messages.map((msg) => (
                 <div
@@ -156,20 +142,30 @@ export default function FAQSidebar({
                     }
                   `}
                   >
-                    <div className="space-y-3 prose prose-invert prose-sm max-w-none">
+                    {/* Wrap ReactMarkdown in a div to apply the spacing */}
+                    <div className="space-y-3">
                       <ReactMarkdown
                         components={{
-                          strong: ({ ...props }) => (
-                            <strong className="text-white font-semibold" {...props} />
+                          strong: ({ node, ...props }) => (
+                            <strong
+                              className="text-white font-semibold"
+                              {...props}
+                            />
                           ),
-                          ul: ({ ...props }) => (
-                            <ul className="list-disc pl-5 space-y-1 marker:text-zinc-500" {...props} />
+                          ul: ({ node, ...props }) => (
+                            <ul
+                              className="list-disc pl-5 space-y-1 marker:text-zinc-500"
+                              {...props}
+                            />
                           ),
-                          ol: ({ ...props }) => (
-                            <ol className="list-decimal pl-5 space-y-1 marker:text-zinc-500" {...props} />
+                          ol: ({ node, ...props }) => (
+                            <ol
+                              className="list-decimal pl-5 space-y-1 marker:text-zinc-500"
+                              {...props}
+                            />
                           ),
-                          p: ({ ...props }) => (
-                            <p className="leading-relaxed mb-0" {...props} />
+                          p: ({ node, ...props }) => (
+                            <p className="leading-relaxed" {...props} />
                           ),
                         }}
                       >
@@ -184,14 +180,13 @@ export default function FAQSidebar({
                 <div className="flex justify-start">
                   <div className="bg-zinc-900 border border-white/10 text-zinc-400 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2">
                     <Loader2 size={16} className="animate-spin" />
-                    <span className="text-xs italic">Thinking...</span>
+                    <span className="text-xs">Thinking...</span>
                   </div>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Footer / Input */}
             <div className="p-4 md:p-6 bg-zinc-900 border-t border-white/10">
               {messages.length <= 1 && (
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -203,7 +198,7 @@ export default function FAQSidebar({
                     <button
                       key={i}
                       onClick={() => handleCustomSubmit(undefined, q)}
-                      className="text-[10px] bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-300 border border-white/10 rounded-full px-3 py-1.5 transition-all text-zinc-400"
+                      className="text-xs bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-300 border border-white/10 rounded-full px-3 py-2 transition-all text-zinc-400 flex items-center gap-2"
                     >
                       {q}
                     </button>
