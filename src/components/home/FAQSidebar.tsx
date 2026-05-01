@@ -53,6 +53,7 @@ export default function FAQSidebar({
     setIsLoading(true);
 
     try {
+      // This call automatically uses NextAuth cookies for authorization
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

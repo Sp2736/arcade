@@ -17,11 +17,6 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface NotesViewProps {
   isDark: boolean;
@@ -66,20 +61,17 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
   });
 
   const fetchNotes = async () => {
-    if (!user || !user.user_id) return;
+    if (!user || !user.id) return;
     setLoading(true);
     try {
-      const { data: vaultData } = await supabase
-          .from('notes')
-          .select('note_id, title, description, semester, file_path, view_count, download_count, created_at, uploader:users!notes_uploaded_by_fkey (full_name, role), verifier:users!notes_verified_by_fkey (full_name), subjects (subject_name, department)')
-          .eq('status', 'approved')
-          .order('created_at', { ascending: false });
+      const vaultRes = await fetch('/api/notes');
+      const myUploadsRes = await fetch('/api/notes/me'); // Custom endpoint for the user's uploads
 
-      const { data: myUploadsData } = await supabase
-          .from('notes')
-          .select('note_id, title, description, semester, file_path, status, rejection_reason, created_at, subjects (subject_name)')
-          .eq('uploaded_by', user.user_id)
-          .order('created_at', { ascending: false });
+      let vaultData = [];
+      let myUploadsData = [];
+
+      if (vaultRes.ok) vaultData = await vaultRes.json();
+      if (myUploadsRes.ok) myUploadsData = await myUploadsRes.json();
 
       setAllResources(vaultData || []);
       setMyUploads(myUploadsData || []);
@@ -96,7 +88,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       const res = await fetch(`/api/subjects?department=${encodeURIComponent(user.department)}`);
       if (res.ok) {
         const data = await res.json();
-        const subjectNames = data.subjects.map((s: any) => s.subject_name);
+        const subjectNames = data.subjects ? data.subjects.map((s: any) => s.subject_name) : [];
         const uniqueSubjects = Array.from(new Set(subjectNames)).sort() as string[];
         setDynamicSubjects(["All Subjects", ...uniqueSubjects]);
         if (uniqueSubjects.length > 0) {
@@ -105,13 +97,11 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       }
 
       // Fetch Staff for Approval Dropdown
-      const { data: staffData } = await supabase
-        .from('users')
-        .select('user_id, full_name, role, is_hod')
-        .eq('department', user.department)
-        .in('role', ['faculty', 'hod']);
-      
-      if (staffData) setStaffList(staffData);
+      const staffRes = await fetch(`/api/users/staff?department=${encodeURIComponent(user.department)}`);
+      if (staffRes.ok) {
+        const staffData = await staffRes.json();
+        setStaffList(staffData);
+      }
 
     } catch (error) {
       console.error("Failed to fetch dependencies:", error);
@@ -132,20 +122,16 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
     setErrorMsg("");
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Authentication error");
-
       const payload = {
         ...uploadData,
-        user_id: user.user_id,
+        user_id: user.id || user._id,
         role: user.role,
       };
 
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify(payload),
       });
@@ -311,7 +297,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                       <select required value={uploadData.assigned_faculty} onChange={(e) => setUploadData({ ...uploadData, assigned_faculty: e.target.value })} className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}>
                         <option value="" disabled>Select Faculty or HOD...</option>
                         {staffList.map((staff) => (
-                          <option key={staff.user_id} value={staff.user_id}>
+                          <option key={staff.user_id || staff._id} value={staff.user_id || staff._id}>
                             {staff.full_name} {staff.is_hod ? "(HOD)" : "(Faculty)"}
                           </option>
                         ))}

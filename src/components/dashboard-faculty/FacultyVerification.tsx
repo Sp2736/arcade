@@ -1,13 +1,7 @@
-// src/components/dashboard-faculty/FacultyVerification.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, X, Eye, Filter, RefreshCw, AlertCircle, Loader2, BookOpen, FileText } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { Check, X, Eye, Filter, RefreshCw, Loader2, BookOpen, FileText } from "lucide-react";
 
 interface FacultyVerificationProps {
   isDark: boolean;
@@ -18,47 +12,31 @@ const ALL_SUBJECTS = ["All Subjects", "Calculus", "Basic Electronics", "Data Str
 const SEMESTERS = ["All Semesters", "Semester 1", "Semester 2", "Semester 3", "Semester 4", "Semester 5", "Semester 6"];
 
 export default function FacultyVerification({ isDark, user }: FacultyVerificationProps) {
-  // Master Tab State
   const [activeTab, setActiveTab] = useState<"notes" | "resumes">("notes");
 
-  // Queue States
   const [pendingNotes, setPendingNotes] = useState<any[]>([]);
   const [pendingResumes, setPendingResumes] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
-  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Filters for Notes
   const [selectedSemester, setSelectedSemester] = useState("All Semesters");
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
-
-  const getAuthToken = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session?.access_token;
-  };
 
   const fetchQueues = async () => {
       setLoading(true);
       try {
-          const token = await getAuthToken();
-          
           if (activeTab === "notes") {
-              if (!user?.department) return;
-              const res = await fetch(`/api/notes/pending?department=${encodeURIComponent(user.department)}`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-              });
+              const res = await fetch(`/api/notes/pending`);
               if (res.ok) {
                   const data = await res.json();
-                  setPendingNotes(data.pendingNotes || []);
+                  setPendingNotes(data || []);
               }
           } else {
-              // Fetch Resumes
-              const res = await fetch(`/api/admin/resumes`, {
-                  headers: { 'Authorization': `Bearer ${token}` }
-              });
+              const res = await fetch(`/api/admin/resumes/pending`); // Assuming this endpoint exists, otherwise fallback to standard
               if (res.ok) {
                   const data = await res.json();
-                  setPendingResumes(data.pendingResumes || []);
+                  setPendingResumes(data || []);
               }
           }
       } catch (error) {
@@ -72,50 +50,37 @@ export default function FacultyVerification({ isDark, user }: FacultyVerificatio
       fetchQueues();
   }, [user, activeTab]);
 
-  // Unified action handler for both notes and resumes
-  const handleAction = async (itemId: number, status: 'approved' | 'rejected') => {
+  const handleAction = async (itemId: string, status: 'approved' | 'rejected') => {
       setProcessingId(itemId);
       try {
-          const token = await getAuthToken();
           const reason = status === 'rejected' ? prompt("Please provide a reason for rejection:") : null;
           
           if (status === 'rejected' && !reason) {
               setProcessingId(null);
-              return; // Cancelled
+              return; 
           }
 
           const endpoint = activeTab === "notes" ? "/api/notes/verify" : "/api/admin/resumes";
           const payloadIdKey = activeTab === "notes" ? "note_id" : "resume_id";
 
           const res = await fetch(endpoint, {
-              method: 'PATCH', // Resumes is mapped to PUT inside the API, we can use PUT
-              // Note: For consistency, ensuring the fetch matches the API route method.
-              // We mapped Resumes to PUT in the API above.
-          });
-          
-          const actualMethod = activeTab === "notes" ? 'PATCH' : 'PUT';
-
-          const finalRes = await fetch(endpoint, {
-              method: actualMethod,
+              method: 'POST', 
               headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`
+                  'Content-Type': 'application/json'
               },
               body: JSON.stringify({
                   [payloadIdKey]: itemId,
                   status: status,
-                  rejection_reason: reason,
-                  verified_by: user.user_id // For notes
+                  rejection_reason: reason
               })
           });
 
-          if (!finalRes.ok) throw new Error("Verification failed");
+          if (!res.ok) throw new Error("Verification failed");
 
-          // Optimistically remove from queue
           if (activeTab === "notes") {
-              setPendingNotes(prev => prev.filter(n => n.note_id !== itemId));
+              setPendingNotes(prev => prev.filter(n => n._id !== itemId));
           } else {
-              setPendingResumes(prev => prev.filter(r => r.resume_id !== itemId));
+              setPendingResumes(prev => prev.filter(r => r._id !== itemId));
           }
 
       } catch (error) {
@@ -149,7 +114,6 @@ export default function FacultyVerification({ isDark, user }: FacultyVerificatio
             </button>
         </div>
 
-        {/* Console Tabs */}
         <div className="flex items-center gap-2 mt-6">
             <button onClick={() => setActiveTab("notes")} className={`flex items-center gap-2 px-4 py-2 rounded-t-lg border-x border-t transition-all ${activeTab === "notes" ? (isDark ? "bg-slate-950 border-slate-800 text-blue-400 font-bold" : "bg-slate-50 border-slate-200 text-blue-600 font-bold") : (isDark ? "border-transparent text-slate-500 hover:bg-slate-800" : "border-transparent text-slate-500 hover:bg-slate-100")}`}>
                 <BookOpen size={16} /> Course Notes
@@ -163,7 +127,6 @@ export default function FacultyVerification({ isDark, user }: FacultyVerificatio
       </div>
 
       <div className={`p-4 md:p-8 flex-1 overflow-y-auto ${isDark ? "bg-slate-950" : "bg-slate-50"}`}>
-        {/* Filters (Only for Notes) */}
         {activeTab === "notes" && (
             <div className="flex flex-wrap gap-3 mb-6">
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${isDark ? "bg-slate-900 border-slate-800" : "bg-white border-slate-200"}`}>
@@ -181,7 +144,6 @@ export default function FacultyVerification({ isDark, user }: FacultyVerificatio
             </div>
         )}
 
-        {/* Table */}
         <div className={`rounded-xl border overflow-hidden shadow-sm ${isDark ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-white"}`}>
             <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className={`border-b font-semibold ${isDark ? "border-slate-800 bg-slate-900 text-slate-300" : "border-slate-200 bg-slate-50 text-slate-600"}`}>
@@ -202,20 +164,20 @@ export default function FacultyVerification({ isDark, user }: FacultyVerificatio
                         </tr>
                     ) : activeQueue.length > 0 ? (
                         activeQueue.map((item) => {
-                            const itemId = activeTab === "notes" ? item.note_id : item.resume_id;
+                            const itemId = item._id;
                             
                             return (
                                 <tr key={itemId} className={`transition-colors ${isDark ? "hover:bg-slate-800/50" : "hover:bg-slate-50"}`}>
                                     <td className="p-4">
-                                        <p className="font-bold">{item.uploader?.full_name}</p>
-                                        <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.uploader?.college_id}</p>
+                                        <p className="font-bold">{item.uploaded_by?.full_name || item.uploader?.full_name}</p>
+                                        <p className={`text-xs mt-0.5 ${isDark ? "text-slate-400" : "text-slate-500"}`}>{item.uploaded_by?.college_id || item.uploader?.college_id}</p>
                                     </td>
                                     <td className="p-4">
                                         <p className="font-medium truncate max-w-[250px]" title={item.title}>{item.title}</p>
                                         <div className="flex items-center gap-2 mt-1">
                                             {activeTab === "notes" ? (
                                                 <>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{item.subjects?.subject_name}</span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${isDark ? "bg-slate-800 text-slate-300" : "bg-slate-100 text-slate-600"}`}>{item.subject_id?.subject_name || item.subjects?.subject_name}</span>
                                                     <span className={`text-[10px] ${isDark ? "text-slate-500" : "text-slate-400"}`}>{item.semester}</span>
                                                 </>
                                             ) : (

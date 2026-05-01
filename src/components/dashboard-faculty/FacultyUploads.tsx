@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { UploadCloud, FileText, CheckCircle, Clock, AlertCircle, Loader2, Link as LinkIcon } from "lucide-react";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
 
 interface FacultyUploadsProps {
   isDark: boolean;
@@ -25,19 +22,17 @@ export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
   });
 
   const fetchMyUploads = async () => {
-      if (!user?.user_id) return;
-      const { data: { session } } = await supabase.auth.getSession();
+      if (!user?.id && !user?._id) return;
       setLoading(true);
       try {
-          // Re-using the same notes GET endpoint, it returns myUploadsData
-          const res = await fetch(`/api/notes?user_id=${user.user_id}&department=${encodeURIComponent(user.department)}`, {
-              headers: { 'Authorization': `Bearer ${session?.access_token}` }
-          });
+          const res = await fetch(`/api/notes/me`);
           if (res.ok) {
               const data = await res.json();
-              setMyUploads(data.myUploadsData || []);
+              setMyUploads(data || []);
           }
-      } catch (error) { console.error("Error fetching faculty uploads"); }
+      } catch (error) { 
+          console.error("Error fetching faculty uploads"); 
+      }
       setLoading(false);
   };
 
@@ -49,11 +44,10 @@ export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
       setErrorMsg("");
 
       try {
-          const { data: { session } } = await supabase.auth.getSession();
           const res = await fetch('/api/notes', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
-              body: JSON.stringify({ ...uploadData, user_id: user.user_id, role: 'faculty' })
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...uploadData, user_id: user.id || user._id, role: 'faculty' })
           });
 
           const data = await res.json();
@@ -70,7 +64,6 @@ export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
 
   return (
     <div className="h-full flex flex-col md:flex-row gap-6 animate-fade-in">
-      {/* Upload Form */}
       <div className={`w-full md:w-1/3 flex flex-col ${cardClass}`}>
         <h3 className={`text-lg font-bold mb-1 ${isDark ? "text-white" : "text-slate-900"}`}>Upload Material</h3>
         <p className={`text-xs mb-6 ${isDark ? "text-slate-400" : "text-slate-500"}`}>Faculty uploads bypass verification and go live instantly.</p>
@@ -107,7 +100,6 @@ export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
         </form>
       </div>
 
-      {/* History */}
       <div className={`w-full md:w-2/3 flex flex-col ${cardClass}`}>
         <h3 className={`text-lg font-bold mb-4 ${isDark ? "text-white" : "text-slate-900"}`}>My Upload History</h3>
         
@@ -121,7 +113,7 @@ export default function FacultyUploads({ isDark, user }: FacultyUploadsProps) {
             ) : (
                 <div className="space-y-3">
                     {myUploads.map((item, idx) => (
-                        <div key={idx} className={`p-4 rounded-lg border flex flex-col sm:flex-row justify-between gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
+                        <div key={item._id || idx} className={`p-4 rounded-lg border flex flex-col sm:flex-row justify-between gap-4 ${isDark ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"}`}>
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isDark ? "bg-slate-800 text-slate-300" : "bg-white border text-slate-600"}`}>{item.subjects?.subject_name}</span>

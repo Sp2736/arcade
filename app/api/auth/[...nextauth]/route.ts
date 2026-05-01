@@ -41,31 +41,38 @@ export const authOptions: NextAuthOptions = {
       }
     })
   ],
-  callbacks: {
-    // Attach the role and ID to the JWT token
-    async jwt({ token, user }) {
-      if (user) {
-        token.role = (user as any).role;
-        token.id = user.id;
-      }
-      return token;
-    },
-    // Pass the role and ID from the token into the active session
-    async session({ session, token }) {
-      if (session?.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
-      }
-      return session;
+  // Inside your authOptions object
+callbacks: {
+  async jwt({ token, user }: any) {
+    // When the user logs in, 'user' will contain the data returned by your authorize function
+    if (user) {
+      token.id = user.id || user._id;
+      token.role = user.role;
+      token.college_id = user.college_id; // CRITICAL: This fixes "ID PENDING"
+      token.department = user.department;
+      token.full_name = user.full_name;
     }
+    return token;
   },
+  async session({ session, token }: any) {
+    // This passes the data from the token to the frontend session object
+    if (token && session.user) {
+      session.user.id = token.id;
+      session.user.role = token.role;
+      session.user.college_id = token.college_id; // CRITICAL: This fixes "ID PENDING"
+      session.user.department = token.department;
+      session.user.full_name = token.full_name;
+    }
+    return session;
+  }
+},
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   // We need a secret to encrypt the JWT. 
   // Add NEXTAUTH_SECRET to your .env.local file!
-  secret: process.env.NEXTAUTH_SECRET, 
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

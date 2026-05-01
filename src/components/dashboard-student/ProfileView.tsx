@@ -12,18 +12,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-);
+import { useSession } from "next-auth/react";
 
 interface ProfileViewProps {
   isDarkMode: boolean;
   targetRole: string;
   onRoleChange: (newRole: string) => void;
   user: any;
+  isUnlocked?: boolean;
 }
 
 const AVAILABLE_ROLES = [
@@ -40,6 +36,8 @@ export default function ProfileView({
   onRoleChange,
   user,
 }: ProfileViewProps) {
+  const { data: session, update: updateSession } = useSession();
+
   const [formData, setFormData] = useState({
     fullName: "",
     collegeId: "",
@@ -64,15 +62,16 @@ export default function ProfileView({
   useEffect(() => {
     if (user) {
       setFormData({
-        fullName: user.full_name || "",
+        fullName: user.full_name || user.name || "",
         collegeId: user.college_id || "",
-        email: user.college_email || "",
+        email: user.college_email || user.email || "", // Fallback to email if college_email is missing
         personalEmail: user.personal_email || "",
         phone: user.phone_number || "",
         bio: user.bio || "",
       });
-      if (user.target_role && user.target_role !== targetRole)
+      if (user.target_role && user.target_role !== targetRole) {
         onRoleChange(user.target_role);
+      }
     }
   }, [user]);
 
@@ -81,14 +80,10 @@ export default function ProfileView({
       setIsSaving(true);
       setMessage(null);
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
         const res = await fetch("/api/profile", {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({
             personal_email: formData.personalEmail,
@@ -100,19 +95,13 @@ export default function ProfileView({
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to save profile");
 
-        // 1. Update local storage with the fresh database row
-        localStorage.setItem("arcade-user", JSON.stringify(data.user));
+        await updateSession();
 
         setIsEditing(false);
         setMessage({
-          text: "Profile updated successfully! Syncing...",
+          text: "Profile updated successfully!",
           type: "success",
         });
-
-        // 2. Force the app to refresh state after 1 second so the user sees the success message
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
       } catch (err: any) {
         setMessage({ text: "Failed to save: " + err.message, type: "error" });
       } finally {
@@ -130,12 +119,17 @@ export default function ProfileView({
         text: "Password must be at least 6 characters.",
         type: "error",
       });
+
     setIsSaving(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.new,
+      const res = await fetch("/api/profile/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: passwordData.new }),
       });
-      if (error) throw error;
+
+      if (!res.ok) throw new Error("Failed to update password");
+
       setMessage({ text: "Password updated successfully!", type: "success" });
       setIsEditingPass(false);
       setPasswordData({ new: "" });
@@ -149,23 +143,17 @@ export default function ProfileView({
   const confirmRoleChange = async () => {
     if (pendingRole) {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
         const res = await fetch("/api/profile", {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify({ target_role: pendingRole }),
         });
 
-        const data = await res.json();
         if (!res.ok) throw new Error("Failed");
 
-        // Update local storage so it persists on reload
-        localStorage.setItem("arcade-user", JSON.stringify(data.user));
+        await updateSession();
 
         onRoleChange(pendingRole);
         setPendingRole(null);
@@ -184,9 +172,6 @@ export default function ProfileView({
     : "bg-white border-zinc-200 shadow-sm";
   const labelColor = "text-zinc-500";
   const textColor = isDarkMode ? "text-white" : "text-zinc-900";
-  const inputBg = isDarkMode
-    ? "bg-black border-zinc-800 text-white"
-    : "bg-zinc-50 border-zinc-300 text-zinc-900";
 
   if (!user)
     return (
@@ -312,7 +297,7 @@ export default function ProfileView({
                 }
                 rows={3}
                 placeholder="Tell us about your career goals..."
-                className={`w-full rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${inputBg} ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
+                className={`w-full rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${isDarkMode ? "bg-black border-zinc-800 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900"} ${!isEditing ? "opacity-70 cursor-not-allowed" : ""}`}
               />
             </div>
           </div>
@@ -346,7 +331,7 @@ export default function ProfileView({
                       placeholder="Min 6 characters"
                       value={passwordData.new}
                       onChange={(e) => setPasswordData({ new: e.target.value })}
-                      className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${inputBg}`}
+                      className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${isDarkMode ? "bg-black border-zinc-800 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900"}`}
                     />
                     <button
                       onClick={() => setShowPassword(!showPassword)}
@@ -385,7 +370,7 @@ export default function ProfileView({
             <select
               value={targetRole}
               onChange={(e) => setPendingRole(e.target.value)}
-              className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none cursor-pointer ${inputBg}`}
+              className={`w-full rounded-xl py-3 pl-4 pr-10 text-sm border focus:outline-none cursor-pointer ${isDarkMode ? "bg-black border-zinc-800 text-white" : "bg-zinc-50 border-zinc-300 text-zinc-900"}`}
             >
               <option value="" disabled>
                 Select a Target

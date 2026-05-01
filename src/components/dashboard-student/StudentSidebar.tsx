@@ -2,6 +2,7 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   FileText,
@@ -126,7 +127,7 @@ export default function StudentSidebar({
         className={`pt-6 border-t ${isDarkMode ? "border-zinc-800" : "border-zinc-200"}`}
       >
         <button
-          onClick={handleLogoutClick} // --- 2. ATTACH THE CLICK HANDLER HERE ---
+          onClick={() => signOut({ callbackUrl: '/' })}
           className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
             isDarkMode
               ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10"

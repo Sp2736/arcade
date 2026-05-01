@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Mail, Award, GraduationCap, AlertCircle } from "lucide-react";
 import { ALUMNI_EXPERTS } from "./AlumniData";
 
-// ✅ Custom LinkedIn Icon (Lucide-style)
+// Custom LinkedIn Icon (Lucide-style)
 const LinkedInIcon = ({ size = 24, color = "currentColor", strokeWidth = 2, ...props }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

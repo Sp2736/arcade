@@ -3,9 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { FileText, ExternalLink, Download, Globe, Code, ChevronLeft, BookOpen, Layers, Filter, Briefcase, Award, GraduationCap, Star, Eye, UploadCloud, Loader2, AlertCircle, Database, GitMerge, Monitor, Brain, Layout, Cpu } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+import { useSession } from "next-auth/react";
 
 interface ResourceViewProps {
   isDark: boolean;
@@ -86,6 +84,7 @@ const SUBJECTS_DATA = [
 ];
 
 export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: ResourceViewProps) {
+  const { data: session } = useSession();
   const activeTab = initialTab; 
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [semesterFilter, setSemesterFilter] = useState("All");
@@ -110,33 +109,31 @@ export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: 
     if (activeTab !== "resumes") return;
     setLoading(true);
     try {
-        const { data: vaultData } = await supabase
-            .from('resume_samples')
-            .select('*')
-            .eq('status', 'approved')
-            .order('created_at', { ascending: false });
-        
-        if (vaultData) setDbResumes(vaultData);
+        // Fetch all approved resumes from the public vault
+        const vaultRes = await fetch('/api/resumes');
+        if (vaultRes.ok) {
+            const vaultData = await vaultRes.json();
+            setDbResumes(vaultData);
+        }
 
-        const savedUserStr = localStorage.getItem("arcade-user");
-        if (savedUserStr) {
-            const user = JSON.parse(savedUserStr);
-            const { data: myData } = await supabase
-                .from('resume_samples')
-                .select('*')
-                .eq('uploaded_by', user.user_id)
-                .order('created_at', { ascending: false });
-            if (myData) setMyResumes(myData);
+        // Fetch user's own uploads
+        if (session?.user) {
+            const myResumesRes = await fetch('/api/resumes/me');
+            if (myResumesRes.ok) {
+                const myData = await myResumesRes.json();
+                setMyResumes(myData);
+            }
         }
     } catch (error) { 
         console.error("Failed to fetch resumes"); 
+    } finally {
+        setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
       fetchResumes();
-  }, [activeTab]);
+  }, [activeTab, session]);
 
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,21 +141,14 @@ export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: 
     setErrorMsg("");
 
     try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const savedUserStr = localStorage.getItem("arcade-user");
-        if (!savedUserStr) throw new Error("User session not found. Please log in again.");
-        const user = JSON.parse(savedUserStr);
-
-        const payload = { ...uploadData, user_id: user.user_id };
+        if (!session?.user) throw new Error("Unauthorized. Please log in.");
 
         const res = await fetch("/api/resumes", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${session?.access_token}`,
+                "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(uploadData),
         });
 
         const data = await res.json();
@@ -281,7 +271,7 @@ export default function ResumeResourcesView({ isDark, initialTab = "resumes" }: 
                     ) : (
                         <div className="space-y-3">
                             {myResumes.map((item, idx) => (
-                                <div key={idx} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300"}`}>
+                                <div key={item._id || idx} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300"}`}>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>
@@ -380,7 +370,7 @@ const ResumeSection = ({ title, icon: Icon, data, isDark, color }: any) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {data.map((item: any) => (
-                    <div key={item.resume_id} className={`p-5 rounded-2xl border transition-all hover:-translate-y-1 ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 hover:border-blue-300 shadow-sm"}`}>
+                    <div key={item._id || item.resume_id} className={`p-5 rounded-2xl border transition-all hover:-translate-y-1 ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/50" : "bg-white border-zinc-200 hover:border-blue-300 shadow-sm"}`}>
                         <h3 className="font-bold mb-1 truncate" title={item.title}>{item.title}</h3>
                         <p className="text-xs mb-4 text-zinc-500">{item.domain}</p>
                         <button onClick={() => window.open(item.file_path, '_blank')} className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold flex justify-center gap-2">

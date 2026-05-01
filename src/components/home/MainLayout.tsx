@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, MessageCircle, Loader2 } from "lucide-react";
-import { createClient } from "@supabase/supabase-js";
+import { useSession, signOut } from "next-auth/react";
 
 import { Sidebar, MobileMenu, ViewState } from "./Navigation";
 import AboutPortal from "./AboutPortal";
@@ -17,89 +17,22 @@ import MeteorCursor from "./MeteorCursor";
 import StudentDashboard from "../dashboard-student/StudentDashboard";
 import FacultyDashboard from "../dashboard-faculty/FacultyDashboard";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
-
 export default function MainLayout() {
+  // --- NEXTAUTH REPLACES SUPABASE LISTENER ---
+  const { data: session, status } = useSession();
+  
   const [currentView, setCurrentView] = useState<ViewState>("home");
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isFAQOpen, setIsFAQOpen] = useState(false);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      const savedUser = localStorage.getItem("arcade-user");
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser));
-        } catch (e) {
-          localStorage.removeItem("arcade-user");
-        }
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        const { data: profile } = await supabase
-          .from("users")
-          .select("*")
-          .eq("auth_id", session.user.id)
-          .single();
-          
-        if (profile) {
-          setUser(profile);
-          localStorage.setItem("arcade-user", JSON.stringify(profile));
-        }
-      } else {
-        setUser(null);
-        localStorage.removeItem("arcade-user");
-      }
-      setLoading(false);
-    };
-
-    initAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session) {
-        const { data: profile } = await supabase
-          .from("users")
-          .select("*")
-          .eq("auth_id", session.user.id)
-          .single();
-          
-        if (profile) {
-          setUser(profile);
-          localStorage.setItem("arcade-user", JSON.stringify(profile));
-        }
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-        localStorage.removeItem("arcade-user");
-        setCurrentView("home");
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleAuthSuccess = (userData: any) => {
-    localStorage.setItem("arcade-user", JSON.stringify(userData));
-    setUser(userData);
-  };
-
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("arcade-user");
-    setUser(null);
+    // NextAuth signOut clears the session and cookie automatically
+    await signOut({ redirect: false });
     setCurrentView("home");
-    window.location.reload(); 
   };
 
-  if (loading) {
+  // NextAuth gives us a built-in loading state
+  if (status === "loading") {
     return (
       <div className="h-screen w-full bg-[#050505] flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
@@ -107,14 +40,18 @@ export default function MainLayout() {
     );
   }
 
-  if (user) {
-    return user.role === "faculty" ? (
-      <FacultyDashboard user={user} onLogout={handleLogout} /> 
+  // If session exists, user is logged in
+  if (session?.user) {
+    const userRole = (session.user as any).role;
+    
+    return userRole === "faculty" ? (
+      <FacultyDashboard user={session.user} onLogout={handleLogout} /> 
     ) : (
-      <StudentDashboard user={user} onLogout={handleLogout} /> 
+      <StudentDashboard user={session.user} onLogout={handleLogout} /> 
     );
   }
 
+  // Unauthenticated Public View
   return (
     <div className="flex h-screen w-full bg-[#050505] text-white font-sans overflow-hidden relative">
       <BackgroundMeteors />
@@ -156,7 +93,8 @@ export default function MainLayout() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <AuthView onAuthSuccess={handleAuthSuccess} />
+              {/* Passed onClose to match our new AuthView design */}
+              <AuthView onClose={() => setCurrentView("home")} />
             </motion.div>
           )}
           {currentView === "contact" && (
