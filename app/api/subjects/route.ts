@@ -1,21 +1,69 @@
-import { NextResponse } from 'next/server';
-import dbConnect from '@/src/lib/mongodb';
-import { Subject } from '@/src/models';
+import { useState, useEffect } from 'react';
 
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url);
-    const department = searchParams.get('department');
-    
-    await dbConnect();
+export default function ResourceUploadForm() {
+  const [subjects, setSubjects] = useState([]);
+  const [faculties, setFaculties] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    // If a department is passed, filter by it. Otherwise, return all.
-    const query = department ? { department } : {};
-    const subjects = await Subject.find(query).sort({ subject_name: 1 });
+  // Form state
+  const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedFaculty, setSelectedFaculty] = useState('');
 
-    return NextResponse.json(subjects);
-  } catch (error: any) {
-    console.error("Subjects Fetch Error:", error);
-    return NextResponse.json({ error: 'Failed to fetch subjects' }, { status: 500 });
-  }
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch Subjects
+        const subjectRes = await fetch('/api/subjects');
+        const subjectData = await subjectRes.json();
+        
+        // Fetch Faculties (Assuming your user route can filter by role)
+        const facultyRes = await fetch('/api/user?role=faculty'); 
+        const facultyData = await facultyRes.json();
+
+        if (subjectRes.ok) setSubjects(subjectData.subjects || subjectData);
+        if (facultyRes.ok) setFaculties(facultyData.users || facultyData);
+      } catch (error) {
+        console.error("Failed to load dropdown data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
+
+  return (
+    <form>
+      {/* Subject Dropdown */}
+      <select 
+        value={selectedSubject} 
+        onChange={(e) => setSelectedSubject(e.target.value)}
+        disabled={isLoading}
+        className="w-full p-2 border rounded"
+      >
+        <option value="">Select Subject</option>
+        {subjects.map((sub: any) => (
+          <option key={sub._id || sub.id} value={sub._id || sub.id}>
+            {sub.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Faculty Dropdown */}
+      <select 
+        value={selectedFaculty} 
+        onChange={(e) => setSelectedFaculty(e.target.value)}
+        disabled={isLoading}
+        className="w-full p-2 border rounded mt-4"
+      >
+        <option value="">Select Faculty</option>
+        {faculties.map((fac: any) => (
+          <option key={fac._id || fac.id} value={fac._id || fac.id}>
+            {fac.name}
+          </option>
+        ))}
+      </select>
+    </form>
+  );
 }

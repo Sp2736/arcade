@@ -1,65 +1,90 @@
-import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
-import dbConnect from '@/src/lib/mongodb';
-import { User } from '@/src/models';
+import { NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import User from "@/src/models/User"; // Change to "@/models/User" if your @ alias points inside src/
+import { dbConnect } from "@/src/lib/mongodb";
 
 export async function POST(req: Request) {
   try {
+    await dbConnect();
+    
     const body = await req.json();
-    const { full_name, college_email, password, college_id, role, department } = body;
+    const {
+      full_name,
+      college_id,
+      college_email,
+      personal_email,
+      phone_number,
+      department,
+      role,
+      target_role,
+      designation,
+      cabin_location,
+      password,
+      adminCode
+    } = body;
 
-    // Validate required fields based on our schema
-    if (!full_name || !college_email || !password || !college_id || !department) {
-      return NextResponse.json(
-        { error: 'Required fields are missing (full_name, college_email, password, college_id, department).' },
-        { status: 400 }
-      );
+    if (!full_name || !college_id || !college_email || !department || !role || !password) {
+      return NextResponse.json({ error: "Missing required primary fields." }, { status: 400 });
     }
 
-    await dbConnect();
+    if (role === "faculty" || role === "admin") {
+      const EXPECTED_CODE = process.env.ARCADE_ADMIN_SECRET || "ARCADE2026"; 
+      if (adminCode !== EXPECTED_CODE) {
+        return NextResponse.json({ error: "Invalid verification code for privileged role." }, { status: 403 });
+      }
+    }
 
-    // Check if the user already exists by email OR college ID
     const existingUser = await User.findOne({ 
       $or: [{ college_email }, { college_id }] 
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'A user with this email or college ID already exists.' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: "User with this College ID or Email already exists." }, { status: 409 });
     }
 
-    // Hash the password securely (10 salt rounds)
+    let assignedPermissions: string[] = [];
+    if (role === "student") {
+      assignedPermissions = ["view_resources", "upload_submissions"];
+    } else if (role === "faculty") {
+      if (designation === "Head of Department") {
+        assignedPermissions = ["view_resources", "manage_resources", "approve_faculty_uploads", "manage_department"];
+      } else {
+        assignedPermissions = ["view_resources", "manage_resources"];
+      }
+    } else if (role === "admin") {
+      assignedPermissions = ["system_admin", "manage_users", "manage_system"];
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the new user in MongoDB
-    const newUser = await User.create({
+    const newUser = new User({
       full_name,
-      college_email,
-      password_hash: hashedPassword,
       college_id,
-      role: role || 'student', // Default to student
-      department
+      college_email,
+      personal_email,
+      phone_number,
+      department,
+      role,
+      target_role,
+      designation,
+      cabin_location,
+      password: hashedPassword,
+      permissions: assignedPermissions
     });
 
-    const userToReturn = {
-      id: newUser._id.toString(),
-      full_name: newUser.full_name,
-      college_email: newUser.college_email,
-      role: newUser.role,
-    };
+    await newUser.save();
 
-    return NextResponse.json(
-      { message: 'User created successfully.', user: userToReturn },
-      { status: 201 }
-    );
+    return NextResponse.json({ 
+      message: "Account created securely", 
+      success: true 
+    }, { status: 201 });
 
   } catch (error: any) {
-    console.error("Signup Error:", error);
-    return NextResponse.json(
-      { error: 'An error occurred during signup.', details: error.message },
-      { status: 500 }
-    );
+    console.error("[BACKEND] Signup Error:", error);
+    
+    // This will now surface the exact Node.js or MongoDB crash reason to your frontend screen
+    return NextResponse.json({ 
+      error: error.message || "An unexpected server error occurred." 
+    }, { status: 500 });
   }
 }

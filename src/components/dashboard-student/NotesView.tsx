@@ -2,37 +2,25 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Search,
-  UploadCloud,
-  Eye,
-  Download,
-  CheckCircle,
-  ShieldCheck,
-  User,
-  Filter,
-  BookOpen,
-  Link as LinkIcon,
-  AlertCircle,
-  Clock,
-  Loader2,
-  XCircle,
+  Search, UploadCloud, Link as LinkIcon, AlertCircle, Clock, Loader2,
+  XCircle, BookOpen, Filter, User, ShieldCheck, CheckCircle
 } from "lucide-react";
 
 interface NotesViewProps {
   isDark: boolean;
-  user: any;
+  user: any; // Coming from NextAuth session
 }
 
 const SEMESTERS_LIST = [
-  "All Semesters",
-  "Semester 1",
-  "Semester 2",
-  "Semester 3",
-  "Semester 4",
-  "Semester 5",
-  "Semester 6",
-  "Semester 7",
-  "Semester 8",
+  "All Semesters", "Semester 1", "Semester 2", "Semester 3",
+  "Semester 4", "Semester 5", "Semester 6", "Semester 7", "Semester 8",
+];
+
+const SUBJECTS_LIST = [
+  "Engineering Mathematics", "Data Structures", "Operating Systems",
+  "Computer Networks", "Database Management", "Design & Analysis of Algorithms",
+  "Software Engineering", "Artificial Intelligence", "Web Development",
+  "Computer Architecture"
 ];
 
 export default function NotesView({ isDark, user }: NotesViewProps) {
@@ -49,23 +37,24 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
   const [selectedSubject, setSelectedSubject] = useState("All Subjects");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [dynamicSubjects, setDynamicSubjects] = useState<string[]>(["All Subjects"]);
+  const [dynamicSubjects] = useState<string[]>(["All Subjects", ...SUBJECTS_LIST]);
 
   const [uploadData, setUploadData] = useState({
     title: "",
     description: "",
-    subject_name: "Select Subject",
+    subject_name: SUBJECTS_LIST[0],
     semester: "Semester 4",
     file_path: "",
     assigned_faculty: "",
   });
 
   const fetchNotes = async () => {
-    if (!user || !user.id) return;
+    // Rely on email since NextAuth provides it by default
+    if (!user || !user.email) return; 
     setLoading(true);
     try {
       const vaultRes = await fetch('/api/notes');
-      const myUploadsRes = await fetch('/api/notes/me'); // Custom endpoint for the user's uploads
+      const myUploadsRes = await fetch(`/api/notes?uploader_email=${encodeURIComponent(user.email)}`);
 
       let vaultData = [];
       let myUploadsData = [];
@@ -73,8 +62,8 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       if (vaultRes.ok) vaultData = await vaultRes.json();
       if (myUploadsRes.ok) myUploadsData = await myUploadsRes.json();
 
-      setAllResources(vaultData || []);
-      setMyUploads(myUploadsData || []);
+      setAllResources(Array.isArray(vaultData) ? vaultData : []);
+      setMyUploads(Array.isArray(myUploadsData) ? myUploadsData : []);
     } catch (error: any) {
       console.error("Error fetching notes:", error.message);
     } finally {
@@ -83,28 +72,21 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
   };
 
   const fetchSubjectsAndStaff = async () => {
-    if (!user || !user.department) return;
     try {
-      const res = await fetch(`/api/subjects?department=${encodeURIComponent(user.department)}`);
-      if (res.ok) {
-        const data = await res.json();
-        const subjectNames = data.subjects ? data.subjects.map((s: any) => s.subject_name) : [];
-        const uniqueSubjects = Array.from(new Set(subjectNames)).sort() as string[];
-        setDynamicSubjects(["All Subjects", ...uniqueSubjects]);
-        if (uniqueSubjects.length > 0) {
-          setUploadData((prev) => ({ ...prev, subject_name: uniqueSubjects[0] }));
-        }
-      }
-
-      // Fetch Staff for Approval Dropdown
-      const staffRes = await fetch(`/api/users/staff?department=${encodeURIComponent(user.department)}`);
+      const staffRes = await fetch(`/api/user?role=faculty`);
       if (staffRes.ok) {
         const staffData = await staffRes.json();
-        setStaffList(staffData);
+        if (Array.isArray(staffData)) {
+          setStaffList(staffData);
+        } else if (staffData && Array.isArray(staffData.users)) {
+          setStaffList(staffData.users);
+        } else {
+          setStaffList([]); 
+        }
       }
-
     } catch (error) {
       console.error("Failed to fetch dependencies:", error);
+      setStaffList([]);
     }
   };
 
@@ -124,15 +106,12 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
     try {
       const payload = {
         ...uploadData,
-        user_id: user.id || user._id,
-        role: user.role,
+        uploader_email: user.email, // Send email instead of missing ID
       };
 
       const res = await fetch("/api/notes", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -142,7 +121,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
       setUploadData({
         title: "",
         description: "",
-        subject_name: dynamicSubjects.length > 1 ? dynamicSubjects[1] : "", 
+        subject_name: SUBJECTS_LIST[0], 
         semester: "Semester 4",
         file_path: "",
         assigned_faculty: "",
@@ -158,9 +137,9 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
 
   const filteredResources = allResources.filter(res => {
       if (!res || !res.title) return false;
-      const matchesSearch = res.title.toLowerCase().includes(searchQuery.toLowerCase()) || (res.subjects?.subject_name && res.subjects.subject_name.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesSem = selectedSemester === "All Semesters" || res.semester === selectedSemester;
-      const subjName = res.subjects?.subject_name || "General";
+      const subjName = res.subject_name || res.subjects?.subject_name || "General";
+      const matchesSearch = res.title.toLowerCase().includes(searchQuery.toLowerCase()) || subjName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSem = selectedSemester === "All Semesters" || res.semester === selectedSemester || res.semester === parseInt(selectedSemester.replace(/\D/g, ''));
       const matchesSubj = selectedSubject === "All Subjects" || subjName === selectedSubject;
       return matchesSearch && matchesSem && matchesSubj;
   });
@@ -214,11 +193,21 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredResources.map((data, idx) => (
+                {filteredResources.map((data, idx) => {
+                  
+                  const uploaderName = data.uploaded_by?.full_name || data.uploader?.full_name || "Student";
+                  let approverName = data.verifier?.full_name || "Faculty";
+                  if (data.approved_by && Array.isArray(data.approved_by) && data.approved_by.length > 0) {
+                      approverName = data.approved_by.map((a: any) => a.full_name || "Faculty").join(", ");
+                  }
+
+                  const documentLink = data.file_path || data.file_url || "#";
+
+                  return (
                   <div key={idx} className={`p-5 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-xl ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-blue-500/30 hover:shadow-blue-900/10" : "bg-white border-zinc-200 hover:border-blue-300 hover:shadow-blue-100/50"}`}>
                     <div className="flex justify-between items-start mb-3">
                       <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${isDark ? "bg-blue-500/10 text-blue-400" : "bg-blue-50 text-blue-600"}`}>
-                        {data.subjects?.subject_name || "General"}
+                        {data.subject_name || data.subjects?.subject_name || "General"}
                       </span>
                       <span className={`text-[10px] font-mono px-2 py-1 rounded-md ${isDark ? "bg-zinc-800 text-zinc-400" : "bg-zinc-100 text-zinc-500"}`}>
                         {data.semester}
@@ -232,7 +221,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                         <span className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>Uploaded By</span>
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <User size={12} className="text-blue-500" />
-                          {data.uploader?.full_name || "Student"}
+                          <span className="truncate max-w-[100px]">{uploaderName}</span>
                         </div>
                       </div>
                       <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
@@ -240,16 +229,21 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                         <span className={`text-[10px] uppercase font-bold tracking-wider mb-1 ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>Verified By</span>
                         <div className="flex items-center gap-1.5 text-xs font-medium">
                           <ShieldCheck size={12} className="text-emerald-500" />
-                          {data.verifier?.full_name || "Faculty"}
+                          <span className="truncate max-w-[100px]">{approverName}</span>
                         </div>
                       </div>
                     </div>
 
-                    <button onClick={() => window.open(data.file_path, "_blank")} className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}>
+                    <a 
+                      href={documentLink} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-colors bg-blue-600 hover:bg-blue-500 text-white`}
+                    >
                       <LinkIcon size={16} /> Open Drive Link
-                    </button>
+                    </a>
                   </div>
-                ))}
+                )})}
               </div>
             )}
           </div>
@@ -282,7 +276,7 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                     <div>
                       <label className={`block text-xs font-bold mb-1.5 ${isDark ? "text-zinc-300" : "text-zinc-700"}`}>Subject</label>
                       <select value={uploadData.subject_name} onChange={(e) => setUploadData({ ...uploadData, subject_name: e.target.value })} className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}>
-                        {dynamicSubjects.filter((s) => s !== "All Subjects").map((sub) => (<option key={sub}>{sub}</option>))}
+                        {SUBJECTS_LIST.map((sub) => (<option key={sub} value={sub}>{sub}</option>))}
                       </select>
                     </div>
                     <div>
@@ -297,8 +291,8 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                       <select required value={uploadData.assigned_faculty} onChange={(e) => setUploadData({ ...uploadData, assigned_faculty: e.target.value })} className={`w-full px-3 py-2 text-sm rounded-lg border outline-none ${isDark ? "bg-zinc-950 border-zinc-800 text-white" : "bg-slate-50 border-zinc-200 text-zinc-900"}`}>
                         <option value="" disabled>Select Faculty or HOD...</option>
                         {staffList.map((staff) => (
-                          <option key={staff.user_id || staff._id} value={staff.user_id || staff._id}>
-                            {staff.full_name} {staff.is_hod ? "(HOD)" : "(Faculty)"}
+                          <option key={staff._id || staff.id} value={staff._id || staff.id}>
+                            {staff.full_name} ({staff.designation || "Faculty"})
                           </option>
                         ))}
                       </select>
@@ -325,12 +319,14 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {myUploads.map((item, idx) => (
+                  {myUploads.map((item, idx) => {
+                    const myDocumentLink = item.file_path || item.file_url || "#";
+                    return (
                     <div key={idx} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${isDark ? "bg-zinc-900 border-zinc-800 hover:border-zinc-700" : "bg-white border-zinc-200 hover:border-zinc-300"}`}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? "bg-zinc-800 text-zinc-300" : "bg-zinc-100 text-zinc-600"}`}>
-                            {item.subjects?.subject_name || "General"}
+                            {item.subject_name || item.subjects?.subject_name || "General"}
                           </span>
                           <span className={`text-[10px] ${isDark ? "text-zinc-500" : "text-zinc-400"}`}>
                             {new Date(item.created_at).toLocaleDateString()}
@@ -346,9 +342,18 @@ export default function NotesView({ isDark, user }: NotesViewProps) {
                           {item.status === "approved" ? <CheckCircle size={14} /> : item.status === "pending" ? <Clock size={14} /> : <XCircle size={14} />}
                           <span className="capitalize">{item.status}</span>
                         </div>
+                        
+                        <a 
+                          href={myDocumentLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className={`p-2 rounded-lg transition-colors ${isDark ? "bg-zinc-800 hover:bg-zinc-700 text-blue-400" : "bg-blue-50 hover:bg-blue-100 text-blue-600"}`}
+                        >
+                          <LinkIcon size={16} />
+                        </a>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               )}
             </div>

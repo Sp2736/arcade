@@ -55,8 +55,8 @@ export default function AuthView({ onAuthSuccess }: AuthViewProps) {
       </div>
 
       {/* ================= FORM PANEL ================= */}
-      <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col items-center justify-center p-6 sm:p-12 md:p-0 bg-[#050505] relative z-20">
-        <div className="w-full max-w-md py-8">
+      <div className="w-full md:w-[55%] lg:w-[60%] flex flex-col items-center p-6 sm:p-12 md:p-0 bg-[#050505] relative z-20 md:h-screen md:overflow-y-auto custom-scrollbar">
+        <div className="w-full max-w-md py-8 md:my-auto px-2">
           <div className="mb-8 text-center md:text-left">
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">
               {mode === "login" ? "User Login" : "Create Account"}
@@ -189,6 +189,16 @@ function SignupForm() {
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newRole = e.target.value;
+    setRole(newRole);
+    if (newRole !== "faculty" && newRole !== "admin") {
+      setDesignation("");
+      setCabin("");
+      setAdminCode("");
+    }
+  };
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
@@ -286,7 +296,7 @@ function SignupForm() {
           <option value="Computer Science and Engineering">Computer Science and Engineering</option>
           <option value="Information Technology">Information Technology</option>
         </SelectGroup>
-        <SelectGroup label="Role" icon={GraduationCap} value={role} onChange={(e: any) => setRole(e.target.value)} required>
+        <SelectGroup label="Role" icon={GraduationCap} value={role} onChange={handleRoleChange} required>
           <option value="" disabled>Select Role</option>
           <option value="student">Student</option>
           <option value="faculty">Faculty</option>
@@ -304,7 +314,18 @@ function SignupForm() {
         {(role === "faculty" || role === "admin") && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="space-y-3">
             <div className="grid grid-cols-2 gap-3 pt-2">
-               <InputGroup label="Designation" icon={Briefcase} type="text" placeholder="e.g. Asst. Professor" value={designation} onChange={(e: any) => setDesignation(e.target.value)} />
+               <SelectGroup label="Designation" icon={Briefcase} value={designation} onChange={(e: any) => setDesignation(e.target.value)} required>
+                 <option value="" disabled>Select Position</option>
+                 {role === "faculty" && (
+                   <>
+                     <option value="Assistant Professor">Assistant Professor</option>
+                     <option value="Head of Department">Head of Department (HOD)</option>
+                   </>
+                 )}
+                 {role === "admin" && (
+                   <option value="System Administrator">System Administrator</option>
+                 )}
+               </SelectGroup>
                <InputGroup label="Cabin Location" icon={MapPin} type="text" placeholder="e.g. Room 402" value={cabin} onChange={(e: any) => setCabin(e.target.value)} />
             </div>
             <div className="overflow-hidden bg-orange-500/10 border border-orange-500/20 rounded-lg p-2">
@@ -358,4 +379,4 @@ const SelectGroup = ({ label, icon: Icon, children, onChange, value, required }:
       </div>
     </div>
   </div>
-);
+);  

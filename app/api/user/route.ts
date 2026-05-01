@@ -1,21 +1,24 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
-import dbConnect from '@/src/lib/mongodb';
-import { User } from '@/src/models';
+import { NextResponse } from "next/server";
+import { dbConnect } from "@/src/lib/mongodb";
+import User from "@/src/models/User";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
     await dbConnect();
-    // Fetching based on the email in your JSON
-    const userProfile = await User.findOne({ college_email: session.user.email }).select('-password_hash');
+    const { searchParams } = new URL(req.url);
+    const role = searchParams.get("role");
 
-    if (!userProfile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(userProfile);
-  } catch (error) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    let query = {};
+    if (role) {
+      query = { role };
+    }
+
+    // Fetch users and exclude passwords for security
+    const users = await User.find(query).select("-password"); 
+    
+    return NextResponse.json(users);
+  } catch (error: any) {
+    console.error("[BACKEND] Fetch Users Error:", error);
+    return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 });
   }
 }
