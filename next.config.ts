@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'export',
+  basePath: '/arcade',
+  images: {
+    unoptimized: true, // Required for static exports
+  },
 };
 
 export default nextConfig;

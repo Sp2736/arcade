@@ -240,7 +240,7 @@ export default function StudentDashboard({ user, onLogout, initialView }: Studen
                         <p className="text-[10px] text-blue-500">{collegeId}</p>
                     </div>
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden border shadow-sm">
-                         <img src="/swayam.jpeg" alt={fullName} className="w-full h-full object-cover" />
+                         <img src="/arcade/swayam.jpeg" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/swayam.jpeg"; }} alt={fullName} className="w-full h-full object-cover" />
                     </div>
                 </button>
             </div>

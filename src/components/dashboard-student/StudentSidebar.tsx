@@ -60,7 +60,7 @@ export default function StudentSidebar({
       <div className="flex flex-col items-start mb-10">
         <div className="relative w-40 h-10 mb-2">
           <img
-            src="/arcade-logo.png"
+            src="/arcade/arcade-logo.png" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/arcade-logo.png"; }}
             alt="ARCADE"
             className="w-full h-full object-contain object-left"
           />

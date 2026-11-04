@@ -176,7 +176,7 @@ export default function FacultyDashboard({ onLogout }: FacultyProps) {
             <div className="w-8 h-8 rounded-md flex items-center justify-center overflow-hidden shadow-sm shrink-0 bg-white">
               {/* Replace 'logo.png' with your actual file name */}
               <img
-                src="/logo-small.png"
+                src="/arcade/logo-small.png" onError={(e) => { (e.currentTarget as HTMLImageElement).src = "/logo-small.png"; }}
                 alt="ARCADE Logo"
                 className="w-full h-full object-contain p-0.5"
               />
