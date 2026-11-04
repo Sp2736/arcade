@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { Send, Sparkles, X, Loader2 } from "lucide-react";
 
 export default function FAQSidebar({ 
@@ -44,7 +44,7 @@ export default function FAQSidebar({
       const aiMsg: Message = { 
         id: Date.now() + 1, 
         role: "ai", 
-        text: data.text || "I encountered an error." 
+        text: data.reply || data.text || "I encountered an error." 
       };
       setMessages((prev) => [...prev, aiMsg]);
     } catch (error) {
@@ -55,8 +55,7 @@ export default function FAQSidebar({
   };
 
   // --- ANIMATION VARIANTS ---
-  // Using x: "100%" is much smoother than animating width
-  const sidebarVariants = {
+  const sidebarVariants: Variants = {
     closed: { 
       x: "100%", 
       opacity: 0,
@@ -88,93 +87,87 @@ export default function FAQSidebar({
             animate="open"
             exit="closed"
             variants={sidebarVariants}
-            /* CRITICAL RESPONSIVE CLASSES:
-               - w-full: Occupies 100% width by default (Mobile/Tablet)
-               - md:w-[30vw]: Occupies 30% width only on Desktop
-               - max-w-none: Removes constraints
-            */
             className="fixed inset-y-0 right-0 z-[100] flex flex-col bg-zinc-950 border-l border-white/10 shadow-2xl w-full md:w-[30vw]"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10 bg-zinc-900/50">
               <div className="flex items-center gap-2">
-                <Sparkles className="text-blue-500 fill-blue-500/20" size={20} />
-                <span className="font-bold text-white tracking-wide">ARCADE AI</span>
+                <Sparkles size={18} className="text-blue-500" />
+                <h2 className="font-bold text-white text-base">Arcade Assistant</h2>
               </div>
-              <button 
-                onClick={onClose} 
-                className="p-2 hover:bg-white/10 rounded-full transition-colors active:scale-95"
-              >
-                <X size={24} className="text-zinc-400" />
+              <button onClick={onClose} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors">
+                <X size={18} />
               </button>
             </div>
 
-            {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar bg-zinc-950">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`
-                    max-w-[85%] p-4 rounded-2xl text-sm leading-relaxed shadow-sm
-                    ${msg.role === "user" 
-                      ? "bg-blue-600 text-white rounded-tr-sm" 
-                      : "bg-zinc-900 border border-white/10 text-zinc-300 rounded-tl-sm"}
-                  `}>
-                    {/* Render Markdown-like bold text */}
-                    {msg.text.split("**").map((part, i) => 
-                        i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
-                    )}
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={`flex flex-col ${m.role === "user" ? "items-end" : "items-start"}`}
+                >
+                  <div
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                      m.role === "user"
+                        ? "bg-blue-600 text-white font-medium"
+                        : "bg-zinc-900 border border-white/10 text-zinc-200"
+                    }`}
+                  >
+                    {m.text}
                   </div>
+                  <span className="text-[10px] text-zinc-500 mt-1 uppercase font-mono tracking-wider">
+                    {m.role === "user" ? "You" : "AI"}
+                  </span>
                 </div>
               ))}
-              
               {isLoading && (
-                <div className="flex justify-start">
-                    <div className="bg-zinc-900 border border-white/10 text-zinc-400 p-4 rounded-2xl rounded-tl-sm flex items-center gap-2">
-                        <Loader2 size={16} className="animate-spin" />
-                        <span className="text-xs">Thinking...</span>
-                    </div>
+                <div className="flex items-center gap-2 text-zinc-500 text-xs py-2">
+                  <Loader2 size={14} className="animate-spin text-blue-500" />
+                  <span>Generating response...</span>
                 </div>
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
-            <div className="p-4 md:p-6 bg-zinc-900 border-t border-white/10">
-              
-              {/* Sample Questions (Only show at start) */}
-              {messages.length < 3 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                  {["Tech Stack?", "How to contribute?", "Database?"].map((q, i) => (
-                      <button
-                      key={i}
-                      onClick={() => handleSend(q)}
-                      className="text-xs bg-zinc-800 hover:bg-blue-600/20 hover:text-blue-300 border border-white/10 rounded-full px-3 py-2 transition-all text-zinc-400 flex items-center gap-2"
-                      >
-                      {q}
-                      </button>
-                  ))}
-                  </div>
-              )}
+            {/* Quick Prompts */}
+            <div className="px-6 py-2 flex gap-2 overflow-x-auto no-scrollbar border-t border-white/5 bg-zinc-950">
+              {["What is ARCADE?", "Current Phase?", "Tech Stack"].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => handleSend(p)}
+                  className="whitespace-nowrap px-3 py-1 rounded-full text-xs font-medium bg-zinc-900 border border-white/10 text-zinc-400 hover:text-white hover:border-blue-500 transition-colors"
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
 
+            {/* Input Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend(query);
+              }}
+              className="p-4 border-t border-white/10 bg-zinc-900/50"
+            >
               <div className="relative flex items-center">
                 <input
                   type="text"
+                  placeholder="Ask a question..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend(query)}
-                  placeholder="Ask about ARCADE..."
-                  disabled={isLoading}
-                  className="w-full bg-black/50 border border-white/10 rounded-xl pl-4 pr-12 py-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-zinc-600"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                 />
-                <button 
-                  onClick={() => handleSend(query)}
-                  disabled={isLoading}
-                  className="absolute right-2 p-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:bg-zinc-800"
+                <button
+                  type="submit"
+                  disabled={!query.trim() || isLoading}
+                  className="absolute right-2 p-2 text-blue-500 hover:text-blue-400 disabled:opacity-40 transition-opacity"
                 >
-                  {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  <Send size={16} />
                 </button>
               </div>
-            </div>
+            </form>
           </motion.div>
         </>
       )}

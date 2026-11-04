@@ -12,7 +12,6 @@ import RoadmapView from "./RoadmapView";
 import SkillNavigator from "./SkillNavigator";
 import ResumeResourcesView from "./ResumeResourcesView";
 import DashboardCursor from "./DashboardCursor"; 
-// Import the new component
 import AlumniNetwork from "./AlumniNetwork";
 
 export const ROADMAP_DATA: any = {
@@ -48,21 +47,24 @@ type Notification = { id: number; title: string; desc: string; time: string; typ
 interface StudentDashboardProps {
   user?: any;
   onLogout?: () => void;
+  initialView?: string;
 }
 
-export default function StudentDashboard({ user, onLogout }: StudentDashboardProps) {
-  const [currentView, setCurrentView] = useState("overview");
+export default function StudentDashboard({ user, onLogout, initialView }: StudentDashboardProps) {
+  const [currentView, setCurrentView] = useState(
+    initialView || (user?.role === "alumni" ? "alumni" : "overview")
+  );
   
   // Create safe dynamic variables based on the logged-in user
-  const fullName = user?.full_name || "Student Name";
+  const fullName = user?.full_name || "Swayam Patel";
   const firstName = fullName.split(" ")[0];
-  const collegeId = user?.college_id?.toUpperCase() || "ID PENDING";
-  const department = user?.department?.toUpperCase() || "DEPARTMENT PENDING";
+  const collegeId = user?.college_id?.toUpperCase() || "24DCS088";
+  const department = user?.department?.toUpperCase() || "COMPUTER ENGINEERING";
   const userInitials = firstName.substring(0, 2).toUpperCase();
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  const [targetRole, setTargetRole] = useState("Frontend Developer"); 
+  const [targetRole, setTargetRole] = useState(user?.target_role || "Frontend Developer"); 
   const [checkedSkills, setCheckedSkills] = useState<string[]>([]);
 
   const currentRoleData = ROADMAP_DATA[targetRole] || ROADMAP_DATA["Frontend Developer"];
@@ -136,7 +138,7 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
             activeView={currentView} 
             onNavigate={setCurrentView} 
             isDarkMode={isDarkMode}
-            studentName="Swayam Patel"
+            studentName={fullName}
             mobileOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
         />
@@ -144,10 +146,9 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
 
       <div className="flex-1 flex flex-col h-full relative z-20 overflow-hidden">
         
-        {/* FIXED HEADER: Removed backdrop-blur-md from the main container class */}
+        {/* FIXED HEADER */}
         <header className={`h-16 md:h-20 border-b flex items-center justify-between px-4 md:px-8 relative z-50 transition-colors duration-300 ${borderMain}`}>
             
-            {/* The blur is now placed on an absolute background layer so it doesn't trap fixed elements! */}
             <div className={`absolute inset-0 -z-10 backdrop-blur-md transition-colors duration-300 ${isDarkMode ? "bg-[#050505]/80" : "bg-white/80"}`} />
 
             <div className="flex items-center gap-3 md:gap-4">
@@ -157,7 +158,7 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                         {currentView.replace("-", " ")}
                     </h1>
                     <p className={`hidden md:block text-xs font-mono ${isDarkMode ? "text-zinc-500" : "text-zinc-400"}`}>
-                        SEM 4 // COMPUTER ENGINEERING
+                        SEM 4 // {department}
                     </p>
                 </div>
             </div>
@@ -179,14 +180,12 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     <AnimatePresence>
                         {showNotifPanel && (
                             <>
-                                {/* Mobile Backdrop Overlay - Will now cover the entire screen properly */}
                                 <motion.div 
                                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                                     className="md:hidden fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm"
                                     onClick={() => setShowNotifPanel(false)}
                                 />
 
-                                {/* Notification Panel */}
                                 <motion.div 
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }} 
                                     animate={{ opacity: 1, y: 0, scale: 1 }} 
@@ -237,11 +236,11 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
 
                 <button onClick={() => setCurrentView("profile")} className="flex items-center gap-3 pl-3 md:pl-6 border-l border-white/10">
                     <div className="hidden md:block text-right">
-                        <p className="text-sm font-bold">Swayam</p>
-                        <p className="text-[10px] text-blue-500">24DCS088</p>
+                        <p className="text-sm font-bold">{firstName}</p>
+                        <p className="text-[10px] text-blue-500">{collegeId}</p>
                     </div>
                     <div className="w-9 h-9 md:w-10 md:h-10 rounded-full overflow-hidden border shadow-sm">
-                         <img src="/swayam.jpeg" alt="Swayam" className="w-full h-full object-cover" />
+                         <img src="/swayam.jpeg" alt={fullName} className="w-full h-full object-cover" />
                     </div>
                 </button>
             </div>
@@ -261,7 +260,6 @@ export default function StudentDashboard({ user, onLogout }: StudentDashboardPro
                     {currentView === "skills" && <SkillNavigator isDark={isDarkMode} />}
                     {currentView === "resumes" && <ResumeResourcesView isDark={isDarkMode} initialTab="resumes" />}
                     {currentView === "resources" && <ResumeResourcesView isDark={isDarkMode} initialTab="resources" />}
-                    {/* NEW: Alumni Network View */}
                     {currentView === "alumni" && <AlumniNetwork isDark={isDarkMode} />}
                 </motion.div>
             </AnimatePresence>

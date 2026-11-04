@@ -16,6 +16,17 @@ import MeteorCursor from "./MeteorCursor";
 // Dashboard Imports
 import StudentDashboard from "../dashboard-student/StudentDashboard";
 import FacultyDashboard from "../dashboard-faculty/FacultyDashboard";
+import AdminDashboard from "../dashboard-admin/AdminDashboard";
+
+// Demo Utilities & Global Modules
+import {
+  installFetchInterceptor,
+  seedSessionStorage,
+  getDemoUser,
+  setDemoUser,
+  clearDemoUser,
+} from "@/src/lib/mockDataService";
+import RoleDetailsPanel from "../demo/RoleDetailsPanel";
 
 export default function MainLayout() {
   const [currentView, setCurrentView] = useState<ViewState>("home");
@@ -25,28 +36,39 @@ export default function MainLayout() {
   const [isFAQOpen, setIsFAQOpen] = useState(false);
 
   useEffect(() => {
-    // On load, check if we have a user saved in the browser
-    const savedUser = localStorage.getItem("arcade-user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem("arcade-user");
-      }
+    // 1. Initialize mock service and seed data
+    installFetchInterceptor();
+    seedSessionStorage();
+
+    // 2. Load demo user if present in session
+    const existingUser = getDemoUser();
+    if (existingUser) {
+      setUser(existingUser);
     }
+
     setLoading(false);
+
+    // 3. Listen to auth changes from other components
+    const handleAuthChange = (e: any) => {
+      setUser(e.detail || getDemoUser());
+    };
+    window.addEventListener("arcade-auth-change", handleAuthChange);
+
+    return () => {
+      window.removeEventListener("arcade-auth-change", handleAuthChange);
+    };
   }, []);
 
   const handleAuthSuccess = (userData: any) => {
-    localStorage.setItem("arcade-user", JSON.stringify(userData));
+    setDemoUser(userData);
     setUser(userData);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("arcade-user");
+    clearDemoUser();
     setUser(null);
     setCurrentView("home");
-    window.location.reload(); // Hard reset to clear all states
+    window.location.reload();
   };
 
   // 1. Initial Loading State
@@ -58,12 +80,24 @@ export default function MainLayout() {
     );
   }
 
-  // 2. Authenticated View (Student or Faculty)
+  // 2. Authenticated Persona Views (Admin, Faculty, Student, Alumni)
   if (user) {
-    return user.role === "faculty" ? (
-      <FacultyDashboard onLogout={handleLogout} />
-    ) : (
-      <StudentDashboard onLogout={handleLogout} />
+    let dashboardContent = null;
+    if (user.role === "admin") {
+      dashboardContent = <AdminDashboard user={user} onLogout={handleLogout} />;
+    } else if (user.role === "faculty") {
+      dashboardContent = <FacultyDashboard onLogout={handleLogout} />;
+    } else if (user.role === "alumni") {
+      dashboardContent = <StudentDashboard user={user} initialView="alumni" onLogout={handleLogout} />;
+    } else {
+      dashboardContent = <StudentDashboard user={user} onLogout={handleLogout} />;
+    }
+
+    return (
+      <div className="relative w-full h-full">
+        {dashboardContent}
+        <RoleDetailsPanel role={user.role} />
+      </div>
     );
   }
 
@@ -82,7 +116,10 @@ export default function MainLayout() {
       />
 
       <div className="fixed top-6 left-6 z-[100] md:hidden">
-        <button onClick={() => setMobileMenuOpen(true)} className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-xl border border-white/10">
+        <button
+          onClick={() => setMobileMenuOpen(true)}
+          className="p-3 bg-zinc-900/50 backdrop-blur-md rounded-xl border border-white/10"
+        >
           <Menu size={20} />
         </button>
       </div>
@@ -106,10 +143,17 @@ export default function MainLayout() {
       </div>
 
       {!isFAQOpen && (
-        <button onClick={() => setIsFAQOpen(true)} className="fixed bottom-8 right-8 z-[100] w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center">
+        <button
+          onClick={() => setIsFAQOpen(true)}
+          className="fixed bottom-8 right-8 z-[100] w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/30"
+          aria-label="FAQ & Help"
+        >
           <MessageCircle size={24} />
         </button>
       )}
+
+      {/* Global Universal Details Panel for public landing as well */}
+      <RoleDetailsPanel role={null} />
     </div>
   );
 }

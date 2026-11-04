@@ -1,20 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import DemoBanner from "@/src/components/demo/DemoBanner";
 
 export const metadata: Metadata = {
-  title: "Arcade Roadmap",
-  description: "Development Phase Roadmap",
+  title: "A.R.C.A.D.E. (Demo)",
+  description: "Academic Resource & Career Assist Digital Environment - Interactive Static Demo",
 };
 
 export default function RootLayout({
@@ -25,9 +15,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050505] text-white`}
+        className="font-sans antialiased bg-[#050505] text-white"
       >
-        {children}
+        <DemoBanner />
+        <div className="pt-9 min-h-screen flex flex-col">
+          {children}
+        </div>
       </body>
     </html>
   );

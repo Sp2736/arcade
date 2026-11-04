@@ -48,11 +48,9 @@ export default function StudentSidebar({
   const textMain = isDarkMode ? "text-white" : "text-zinc-900";
   const textSub = isDarkMode ? "text-zinc-500" : "text-zinc-500";
 
-  // --- 1. ADD THIS LOGOUT FUNCTION ---
   const handleLogoutClick = () => {
-    // Remove the user session data
     localStorage.removeItem("arcade-user");
-    // Reload the page to reset MainLayout state and return to Login
+    sessionStorage.removeItem("arcade-demo-user");
     window.location.reload();
   };
 
@@ -60,34 +58,25 @@ export default function StudentSidebar({
     <div className="flex flex-col h-full p-6">
       {/* Header */}
       <div className="flex flex-col items-start mb-10">
-        <div className="flex items-center justify-between w-full">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shadow-lg shadow-blue-600/20 bg-white">
-            <img
-              src="/logo-small.png"
-              alt="ARCADE Logo"
-              className="w-full h-full object-contain p-1"
-            />
-          </div>
-          <button
-            onClick={onMobileClose}
-            className="md:hidden p-2 text-zinc-500 hover:text-zinc-800"
-          >
-            <X size={20} />
-          </button>
+        <div className="relative w-40 h-10 mb-2">
+          <img
+            src="/arcade-logo.png"
+            alt="ARCADE"
+            className="w-full h-full object-contain object-left"
+          />
         </div>
-        <div className="mt-4">
-          <h2 className={`text-sm font-bold tracking-widest ${textMain}`}>
-            ARCADE
-          </h2>
-          <p className={`text-[10px] font-mono ${textSub}`}>
-            {firstName}'S TERMINAL
-          </p>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-mono tracking-widest text-zinc-500 uppercase">
+            STUDENT PORTAL
+          </span>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex-1 space-y-2">
+      {/* Navigation Links */}
+      <nav className="flex-1 space-y-1.5 overflow-y-auto pr-2 custom-scrollbar">
         {MENU_ITEMS.map((item) => {
+          const Icon = item.icon;
           const isActive = activeView === item.id;
           return (
             <button
@@ -96,56 +85,58 @@ export default function StudentSidebar({
                 onNavigate(item.id);
                 onMobileClose();
               }}
-              className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all duration-200 group relative ${
+              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all group ${
                 isActive
-                  ? isDarkMode
-                    ? "bg-blue-600/10 text-blue-400"
-                    : "bg-blue-50 text-blue-700"
-                  : isDarkMode
-                    ? "text-zinc-500 hover:text-white hover:bg-white/5"
-                    : "text-zinc-500 hover:text-black hover:bg-zinc-100/70"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25 font-bold"
+                  : `${textSub} hover:bg-zinc-800/20 hover:text-white`
               }`}
             >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute left-0 w-1 h-6 bg-blue-500 rounded-r-full"
-                />
-              )}
-              <div className="relative">
-                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-              </div>
-              <span className="text-sm font-medium">{item.label}</span>
+              <Icon
+                size={18}
+                className={`transition-transform duration-200 ${
+                  isActive
+                    ? "scale-110 text-white"
+                    : "group-hover:scale-110 group-hover:text-white"
+                }`}
+              />
+              <span className="tracking-wide">{item.label}</span>
             </button>
           );
         })}
-      </div>
+      </nav>
 
-      {/* Footer */}
-      <div
-        className={`pt-6 border-t ${isDarkMode ? "border-zinc-800" : "border-zinc-200"}`}
-      >
-        <button
-          onClick={handleLogoutClick} // --- 2. ATTACH THE CLICK HANDLER HERE ---
-          className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
-            isDarkMode
-              ? "text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
-              : "text-red-500/70 hover:text-red-600 hover:bg-red-50"
-          }`}
-        >
-          <LogOut size={20} /> <span className="text-sm">Disconnect</span>
-        </button>
+      {/* Bottom Profile / Logout Component */}
+      <div className="pt-6 border-t border-zinc-800/40 mt-auto">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/40 border border-zinc-800/60">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center font-bold text-xs text-blue-400">
+              {firstName.substring(0, 2)}
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-xs font-bold text-white truncate">{studentName}</p>
+              <p className="text-[10px] text-zinc-500 font-mono">ENROLLED</p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogoutClick}
+            className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+            title="Log Out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </div>
   );
 
   return (
     <>
-      <div
-        className={`hidden md:flex w-72 h-full border-r flex-col backdrop-blur-xl transition-colors duration-300 ${bgClass}`}
-      >
+      {/* Desktop Persistent Sidebar */}
+      <aside className={`hidden md:flex flex-col w-64 h-full border-r ${bgClass}`}>
         <SidebarContent />
-      </div>
+      </aside>
+
+      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -154,17 +145,23 @@ export default function StudentSidebar({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onMobileClose}
-              className="fixed inset-0 bg-black/60 z-40 md:hidden backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
             />
-            <motion.div
+            <motion.aside
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className={`fixed inset-y-0 left-0 z-50 w-72 border-r shadow-2xl ${bgClass}`}
+              transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+              className={`fixed top-0 bottom-0 left-0 w-72 z-50 flex flex-col border-r md:hidden ${bgClass}`}
             >
+              <button
+                onClick={onMobileClose}
+                className="absolute top-6 right-6 p-2 text-zinc-400 hover:text-white"
+              >
+                <X size={20} />
+              </button>
               <SidebarContent />
-            </motion.div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>
