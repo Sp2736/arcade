@@ -459,11 +459,11 @@ The platform was built **module-wise**, each module stabilised before the next. 
 
 Built by a three-person team for the **Semester 4 Student Group Project** (Full Stack Web Development) at **Charotar University of Science & Technology (CHARUSAT)**.
 
-| Role | Name | ID |
-|---|---|---|
-| Team Leader | **Swayam Patel** | 24DCS088 |
-| Member | Jalisabanu Malik | 24DCS049 |
-| Member | Rutansh Govardhan | 24DCE045 |
+| Role | Name | ID | GitHub |
+| :--- | :--- | :--- | :--- |
+| Team Leader | **Swayam Patel** | 24DCS088 | [@Sp2736](https://github.com/Sp2736) |
+| Member | Jalisabanu Malik | 24DCS049 | [@jalisa2106](https://github.com/jalisa2106) |
+| Member | Rutansh Govardhan | 24DCE045 | [@rutansh-07](https://github.com/rutansh-07) |
 
 ---
 
