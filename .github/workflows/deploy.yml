@@ -1,7 +1,7 @@
 name: Deploy Next.js to GitHub Pages
 on:
   push:
-    branches: ["demo"] 
+    branches: ["gh-pages"] 
 permissions:
   contents: read
   pages: write
