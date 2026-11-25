@@ -16,7 +16,8 @@ ROOT  = Path(__file__).resolve().parent.parent
 IST   = dt.timezone(dt.timedelta(hours=5, minutes=30))
 
 def api(path):
-    url = f"https://api.github.com/repos/{REPO}/{path}"
+    suffix = f"/{path.lstrip('/')}" if path else ""
+    url = f"https://api.github.com/repos/{REPO}{suffix}"
     h = {"User-Agent": "archive-stats", "Accept": "application/vnd.github+json"}
     if TOKEN:
         h["Authorization"] = f"Bearer {TOKEN}"
