@@ -470,3 +470,12 @@ Built by a three-person team for the **Semester 4 Student Group Project** (Full 
 <div align="center">
 <sub>Developed strictly for academic purposes as part of the Semester 4 Student Group Project.</sub>
 </div>
+
+
+---
+
+## 📦 Project Snapshot
+
+<!--ARCHIVE_STATS_START-->
+<!-- auto-generated — do not edit manually -->
+<!--ARCHIVE_STATS_END-->
