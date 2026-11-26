@@ -491,6 +491,6 @@ Built by a three-person team for the **Semester 4 Student Group Project** (Full 
 
 **Languages:** `TypeScript` 99.5%  `Batchfile` 0.2%  `JavaScript` 0.2%  `CSS` 0.1%
 
-**Top Contributors:** [@Sp2736](https://github.com/Sp2736) `10` · [@AduriteGem](https://github.com/AduriteGem) `4` · [@jalisa2106](https://github.com/jalisa2106) `2`
+**Top Contributors:** [@Sp2736](https://github.com/Sp2736) `16` · [@jalisa2106](https://github.com/jalisa2106) `2`
 
 <!--ARCHIVE_STATS_END-->
